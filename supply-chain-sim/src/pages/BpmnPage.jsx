@@ -1,8 +1,8 @@
 import React from "react";
 import { motion } from "framer-motion";
-import Mapbox from "../components/mapbox";
+import BpmnModeler from "../components/bpmnModeler";
 
-function SimulationPage() {
+function BpmnPage() {
   return (
     <motion.div
       className="container text-center"
@@ -11,9 +11,9 @@ function SimulationPage() {
       exit={{ opacity: 1 }}
       transition={{ duration: 0.75, ease: "easeOut" }}
     >
-      <Mapbox />
+      <BpmnModeler />
     </motion.div>
   );
 }
 
-export default SimulationPage;
+export default BpmnPage;
