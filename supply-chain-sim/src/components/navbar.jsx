@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import supplyChainIcon from "../../public/Image/supply-chain.png";
 import {
   simulationRoute,
   bpmnRoute,
@@ -9,16 +10,12 @@ import {
 
 const Navigation = () => {
   return (
-    <nav className="sticky top-0 bg-white ">
+    <nav className="sticky top-0 bg-white z-50 ">
       <div className="max-w-screen-2xl flex flex-wrap items-center justify-between p-4">
         <a href="https://flowbite.com/" className="flex items-center">
-          <img
-            src="https://flowbite.com/docs/images/logo.svg"
-            className="h-8 mr-3"
-            alt="Flowbite Logo"
-          />
+          <img src={supplyChainIcon} className="h-8 mr-3" alt="Flowbite Logo" />
           <span className="self-center text-2xl font-semibold whitespace-nowrap dark:text-white">
-            Flowbite
+            Digital Twin
           </span>
         </a>
         <button

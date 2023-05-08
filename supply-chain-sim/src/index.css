@@ -13,6 +13,104 @@
  */
 body {
   background-image: url("../public/Image/bg.jpg");
+  -webkit-background-size: cover;
+  -moz-background-size: cover;
+  -o-background-size: cover;
+  background-size: cover;
+}
+
+.mapbox-gl-canvas {
+  right: 0;
+}
+
+.customer-footer {
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 1250px;
+  height: 100px;
+  display: inline-block;
 }
 
 /* Map Style */
+.map-container {
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 1110px;
+  height: 500px;
+  display: inline-block;
+}
+
+.marker-supplier {
+  background-image: url("../public/Image/factory.png");
+  border: solid black;
+  background-size: cover;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.marker-manufacturer {
+  background-image: url("../public/Image/factory.png");
+  border: solid black;
+  background-size: cover;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.marker-distributor {
+  background-image: url("../public/Image/warehouse.png");
+  border: solid black;
+  background-size: cover;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.marker-distribution-center {
+  background-image: url("../public/Image/warehouse.png");
+  border: solid black;
+  background-size: cover;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.marker-customer {
+  background-image: url("../public/Image/store.png");
+  border: solid black;
+  background-size: cover;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.marker-vehicle {
+  background-image: url("../public/Image/truck.png");
+  border: solid black;
+  background-size: cover;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.sidebar {
+  background-color: rgba(35, 55, 75, 0.9);
+  color: #fff;
+  padding: 6px 12px;
+  font-family: monospace;
+  z-index: 10;
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 12px;
+  border-radius: 4px;
+}
