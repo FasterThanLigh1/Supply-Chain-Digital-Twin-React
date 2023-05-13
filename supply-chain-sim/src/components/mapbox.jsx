@@ -1,24 +1,36 @@
 import React from "react";
 import { useEffect, useRef, useState } from "react";
-import { Button } from "antd";
+import { Button, Typography, Modal, DatePicker, Space } from "antd";
 import mapboxgl from "mapbox-gl"; // eslint-disable-line import/no-webpack-loader-syntax
 import { AgentType, mapaboxAcessToken } from "../constants";
 import * as turf from "@turf/turf";
 import carImage from "../../public/Image/truck.png";
 import { activeMarkers, activeRoute } from "../constants";
 import { useDispatch, useSelector } from "react-redux";
-import { set, selectState } from "../features/stateSlice";
+import { setState, selectState } from "../features/stateSlice";
+import { selectAdjList } from "../features/graphSlice";
+import { UseInterval } from "../ultils/CustomHooks";
+import dayjs from "dayjs";
+import { execute } from "../constants/test";
+import { CurrentGraph, supplier, distributor } from "../globalVariable";
+import { Map } from "../globalVariable";
+import { setCurrentDate, selectCurrentDate } from "../features/dateSlice";
 
 mapboxgl.accessToken = mapaboxAcessToken;
+const { RangePicker } = DatePicker;
 
 function Mapbox({ graph }) {
   const mapContainer = useRef(null);
+  const [curDate, setCurDate] = useState(dayjs());
   const map = useRef(null);
   const [lng, setLng] = useState(-70.9);
   const [lat, setLat] = useState(42.35);
-  const [zoom, setZoom] = useState(8);
+  const [zoom, setZoom] = useState(5);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const state = useSelector(selectState);
+  const currentDate = useSelector(selectCurrentDate);
+
   const dispatch = useDispatch();
 
   async function getRoute(start, end, routeId) {
@@ -79,41 +91,18 @@ function Mapbox({ graph }) {
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: "mapbox://styles/mapbox/streets-v12",
-      center: [24, 24],
+      center: [-97, 35],
       zoom: zoom,
       includeGeometry: true,
     });
-    for (let i = 0; i < graph.noOfVertices; i++) {
+    for (let i = 0; i < graph.getLength(); i++) {
       console.log(graph);
-      const el = document.createElement("div");
-      if (graph.AdjList[i].data.type === AgentType.Supplier) {
-        el.className = "marker-supplier";
-      } else if (graph.AdjList[i].data.type === AgentType.Distributor) {
-        el.className = "marker-distributor";
-      } else if (graph.AdjList[i].data.type === AgentType.Manufacturer) {
-        el.className = "marker-manufacturer";
-      } else if (graph.AdjList[i].data.type === AgentType.Customer) {
-        el.className = "marker-customer";
-      }
-
-      var popup = new mapboxgl.Popup()
-        .setHTML(
-          `<strong>${graph.AdjList[i].data.name}</strong><p>Latitude: ${graph.AdjList[i].data.location.x} Longtitude: ${graph.AdjList[i].data.location.y}</p>`
-        )
-        .addTo(map.current);
-
-      const temp = new mapboxgl.Marker(el)
-        .setLngLat([
-          graph.AdjList[i].data.location.x,
-          graph.AdjList[i].data.location.y,
-        ])
-        .addTo(map.current)
-        .setPopup(popup);
-      activeMarkers.push(temp);
+      initMarker(graph.AdjList[i].data);
     }
     map.current.on("click", (event) => {
       console.log("click");
     });
+    Map.current = map.current;
   });
 
   useEffect(() => {
@@ -125,14 +114,14 @@ function Mapbox({ graph }) {
     });
   });
 
-  const runShipment = (step, id) => {
+  const runShipment = (step, id, onFinishCallBack) => {
     if (state === true) {
       console.log("Still running");
       return;
     }
     if (map.current.getLayer(id)) return;
 
-    dispatch(set(true));
+    dispatch(setState(true));
     var iPathLength = turf.lineDistance(step, "kilometers");
     var iPoint = turf.along(step, 0, "kilometers");
     var rep = 0;
@@ -173,8 +162,8 @@ function Mapbox({ graph }) {
           map.current.removeImage("cat" + id);
           map.current.removeLayer(id);
           map.current.removeSource(id);
-          console.log("finished running");
-          dispatch(set(false));
+          onFinishCallBack();
+          dispatch(setState(false));
           clearInterval(interval);
         }
       } else {
@@ -186,8 +175,45 @@ function Mapbox({ graph }) {
     }, timePerStep);
   };
 
+  const [isRun, setIsRun] = useState(null);
+  UseInterval(() => {
+    //console.log(curDate.hour());
+    console.log(
+      curDate.date() +
+        "/" +
+        curDate.month() +
+        "/" +
+        curDate.year() +
+        " - " +
+        curDate.hour()
+    );
+
+    for (let i = 0; i < CurrentGraph.AdjList.length; i++) {
+      console.log(CurrentGraph.AdjList);
+      execute(CurrentGraph.AdjList[i].data, curDate.hour());
+    }
+    /*  execute(supplier, curDate.hour());
+    execute(distributor, curDate.hour()); */
+
+    setCurDate((prev) => prev.add(1, "hour"));
+  }, isRun);
+
   const onClickSimulate = () => {
-    for (let i = 0; i < graph.noOfVertices; i++) {
+    if (state === true) {
+      console.log("Still running");
+      return;
+    }
+    for (let i = 0; i < graph.getLength(); i++) {
+      for (let j = 0; j < activeMarkers.length; j++) {
+        console.log(graph.AdjList[i].data.name);
+        if (graph.AdjList[i].data.name == activeMarkers[j].id) {
+          activeMarkers[j].marker.setLngLat([
+            graph.AdjList[i].data.location.x,
+            graph.AdjList[i].data.location.y,
+          ]);
+          break;
+        }
+      }
       if (graph.AdjList[i].adjacent.length > 0) {
         for (let j = 0; j < graph.AdjList[i].adjacent.length; j++) {
           const id = "route_" + j.toString() + "_" + i.toString();
@@ -207,12 +233,76 @@ function Mapbox({ graph }) {
     }
   };
 
+  const initMarker = (agent) => {
+    const el = document.createElement("div");
+    if (agent.type === AgentType.Supplier) {
+      el.className = "marker-supplier";
+    } else if (agent.type === AgentType.Distributor) {
+      el.className = "marker-distributor";
+    } else if (agent.type === AgentType.Manufacturer) {
+      el.className = "marker-manufacturer";
+    } else if (agent.type === AgentType.Customer) {
+      el.className = "marker-customer";
+    }
+
+    var popup = new mapboxgl.Popup()
+      .setHTML(
+        `<strong>${agent.name}</strong><p>Latitude: ${agent.location.x} Longtitude: ${agent.location.y}</p>`
+      )
+      .addTo(map.current);
+
+    const temp = new mapboxgl.Marker(el)
+      .setLngLat([agent.location.x, agent.location.y])
+      .addTo(map.current)
+      .setPopup(popup);
+    activeMarkers.push({
+      id: agent.name,
+      marker: temp,
+    });
+  };
+
   const run = () => {
-    for (let i = 0; i < activeRoute.length; i++) {
+    if (isRun != null) {
+      setIsRun(null);
+    } else {
+      setIsRun(1000);
+    }
+    if (state === true) {
+      console.log("Still running");
+      return;
+    }
+    dispatch(setState(true));
+
+    for (let i = 0; i < CurrentGraph.AdjList.length - 1; i++) {
+      CurrentGraph.AdjList[i].data.route = activeRoute[i];
+    }
+    console.log("List: ", CurrentGraph.AdjList);
+    /* const id = "peep" + 0;
+    runShipment(supplier.route, id, () => {
+      console.log("finished running callback");
+    }); */
+    /* for (let i = 0; i < activeRoute.length; i++) {
       const id = "peep" + i.toString();
       console.log(id);
-      runShipment(activeRoute[i], id);
-    }
+      runShipment(activeRoute[i], id, () => {
+        console.log("finished running callback");
+      });
+    } */
+  };
+
+  const handleDateOk = () => {
+    console.log("OK");
+    setIsModalOpen(false);
+  };
+
+  const onChangeDate = (value, dateString) => {
+    console.log("Selected Time: ", value);
+    SetDate(value[0]);
+  };
+
+  const SetDate = (date) => {
+    setCurDate(date);
+    dispatch(setCurrentDate(date.toString()));
   };
 
   return (
@@ -229,7 +319,64 @@ function Mapbox({ graph }) {
       >
         Run
       </Button>
+      <Button
+        style={{ background: "red", borderColor: "yellow" }}
+        onClick={() => {
+          setIsModalOpen(true);
+        }}
+      >
+        Run Sim
+      </Button>
+      <Button
+        style={{ background: "red", borderColor: "yellow" }}
+        onClick={() => {
+          console.log("test");
+          supplier.load(supplier);
+          distributor.printWhole(distributor);
+        }}
+      >
+        Ship
+      </Button>
+      <Button
+        style={{ background: "red", borderColor: "yellow" }}
+        onClick={() => {
+          console.log("test");
+          supplier.unload(supplier);
+        }}
+      >
+        Unload
+      </Button>
+      <Typography>
+        Lat: {lat} | Lng: {lng} | Zoom: {zoom}
+      </Typography>
+      <Typography>{curDate.toString()}</Typography>
       <div ref={mapContainer} className="map-container" />
+      <Modal
+        title="Basic Modal"
+        open={isModalOpen}
+        onOk={handleDateOk}
+        onCancel={() => {
+          setIsModalOpen(false);
+        }}
+        okText="Run"
+      >
+        <Space direction="vertical" size={10}>
+          <Space direction="horizontal" size={5}>
+            <Typography>Date: </Typography>
+            <RangePicker
+              showTime={{
+                format: "HH:mm",
+              }}
+              onChange={onChangeDate}
+              format="YYYY-MM-DD HH:mm"
+            />
+          </Space>
+          <Space direction="horizontal" size={5}>
+            <Typography>Current Date: </Typography>
+            <DatePicker value={curDate} showTime disabled />
+          </Space>
+        </Space>
+      </Modal>
     </div>
   );
 }

@@ -8,7 +8,9 @@ import {
 } from "@ant-design/icons";
 import { Layout, Menu } from "antd";
 import { useState } from "react";
-import { g } from "../constants/test";
+import { CurrentGraph, curData } from "../globalVariable";
+import { useDispatch, useSelector } from "react-redux";
+import { setChosen } from "../features/chosenSlice";
 
 const { Sider } = Layout;
 function getItem(label, key, icon, children) {
@@ -35,19 +37,43 @@ export const items = [
 ];
 
 function CustomSider() {
+  const dispatch = useDispatch();
   const [menuItem, setMenuItem] = useState(items);
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
-    const newItems = g.AdjList.map((item) => {
+    const newItems = CurrentGraph.AdjList.map((item) => {
       return {
         label: item.data.name,
-        key: item.data.id,
+        key: item.id,
         icon: <UserOutlined />,
       };
     });
     setMenuItem(newItems);
   }, []);
+
+  const onClickItem = (e) => {
+    for (let i = 0; i < CurrentGraph.getLength(); i++) {
+      if (CurrentGraph.AdjList[i].id == e.key) {
+        console.log(CurrentGraph.AdjList[i].data);
+        dispatch(
+          setChosen({
+            name: CurrentGraph.AdjList[i].data.name,
+            x: CurrentGraph.AdjList[i].data.location.x,
+            y: CurrentGraph.AdjList[i].data.location.y,
+            inventory: CurrentGraph.AdjList[i].data.inventory,
+            /* processes: CurrentGraph.AdjList[i].data.processes, */
+            processes: [],
+            type: CurrentGraph.AdjList[i].data.type,
+            id: CurrentGraph.AdjList[i].data.id,
+          })
+        );
+        curData.currentAgent = CurrentGraph.AdjList[i].data;
+        console.log(curData.currentAgent);
+        return;
+      }
+    }
+  };
 
   return (
     <Sider
@@ -69,9 +95,7 @@ function CustomSider() {
         defaultSelectedKeys={["1"]}
         mode="inline"
         items={menuItem}
-        onClick={(e) => {
-          console.log(e);
-        }}
+        onClick={onClickItem}
       />
     </Sider>
   );

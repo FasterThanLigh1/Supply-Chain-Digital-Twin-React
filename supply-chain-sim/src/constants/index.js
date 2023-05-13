@@ -8,5 +8,28 @@ export const AgentType = {
   Customer: "customer",
 };
 
+export const RunState = {
+  CanRun: "CanRun",
+  Running: "Running",
+};
+
+export const EventType = {
+  Start: "start",
+  End: "end",
+  Intermediate: "intermediate",
+};
+
+export const EventStartType = {
+  Loop: "loop",
+  Message: "message",
+  Timer: "timer",
+  Auto: "auto",
+};
+
+export const GatewayType = {
+  Parallel: "parallel",
+  Exclusive: "exclusive",
+};
+
 export const activeMarkers = [];
 export const activeRoute = [];

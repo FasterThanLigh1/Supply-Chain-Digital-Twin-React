@@ -2,46 +2,21 @@ import React, { useEffect } from "react";
 import { motion } from "framer-motion";
 import Mapbox from "../components/mapbox";
 import CustomSider from "../components/sider";
-import {
-  Breadcrumb,
-  Layout,
-  Menu,
-  Typography,
-  theme,
-  Form,
-  Input,
-  Checkbox,
-  Button,
-  InputNumber,
-  Space,
-} from "antd";
+import { Layout, Typography, theme, Input, Space } from "antd";
 import { useState } from "react";
 const { Header, Content, Footer, Sider } = Layout;
 import { useSelector, useDispatch } from "react-redux";
-import { increment, selectCount } from "../features/counterSlice";
-import { supplier, distributor, customer1 } from "../constants/test";
-import { items } from "../components/sider";
-import { g } from "../constants/test";
+import { CurrentGraph } from "../globalVariable";
+import Inspector from "../components/inspector";
+import BpmnFooter from "../components/bpmnFooter";
 
 function SimulationPage() {
-  const count = useSelector(selectCount);
   const dispatch = useDispatch();
 
   const {
     token: { colorBgContainer },
   } = theme.useToken();
 
-  const onFinish = (values) => {
-    console.log("Success:", values);
-  };
-  const onFinishFailed = (errorInfo) => {
-    console.log("Failed:", errorInfo);
-  };
-
-  useEffect(() => {
-    console.log("Hello world", count);
-    dispatch(increment);
-  }, []);
   return (
     <motion.div
       className="container text-center"
@@ -65,66 +40,35 @@ function SimulationPage() {
             }}
           /> */}
           <Content
-          /* style={{
+            /* style={{
               margin: "0 16px",
             }} */
+            style={{
+              textAlign: "center",
+              height: 480,
+              wdith: 1100,
+            }}
           >
             <div
               style={{
-                minHeight: 400,
-                minWidth: 1000,
-                width: "auto",
-                height: "auto",
                 background: colorBgContainer,
               }}
             >
-              <Mapbox graph={g} />
+              <Mapbox graph={CurrentGraph} />
             </div>
           </Content>
           <Footer
             style={{
               textAlign: "center",
+              height: 480,
             }}
           >
             <div className="customer-footer">
-              Ant Design ©2023 Created by Ant UED jfhajfhsdlajflkdsaf
-              dsfjsadhfalsdjfhjladshjf sdafjhasdfkjhasdjkfhaskdf
-              adsfjhsdakfkhasdkfhsd adbjfasdhfksdahjfsdahkfjasd
-              dajfhaskfhsadkhfjksdahfjksdahfk
+              <BpmnFooter />
             </div>
           </Footer>
         </Layout>
-        <Sider width={300}>
-          <Space direction="vertical" size={10}>
-            <div className="text-white">
-              <Space size={5}>
-                <Typography className="text-white">Name</Typography>
-                <Input />
-              </Space>
-            </div>
-
-            <div className="text-white">
-              <Space size={5}>
-                <Typography className="text-white">Type</Typography>
-                <Input />
-              </Space>
-            </div>
-
-            <div className="text-white">
-              <Space size={5}>
-                <Typography className="text-white">Longtitude</Typography>
-                <Input />
-              </Space>
-            </div>
-
-            <div className="text-white">
-              <Space size={5}>
-                <Typography className="text-white">Latitude</Typography>
-                <Input />
-              </Space>
-            </div>
-          </Space>
-        </Sider>
+        <Inspector />
       </Layout>
     </motion.div>
   );

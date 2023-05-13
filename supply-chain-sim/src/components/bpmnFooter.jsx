@@ -8,26 +8,12 @@ import BpmnModdle from "bpmn-moddle";
 import TokenSimulationModule from "bpmn-js-token-simulation";
 import SimulationSupportModule from "bpmn-js-token-simulation/lib/simulation-support";
 import "bpmn-js-token-simulation/assets/css/bpmn-js-token-simulation.css";
-import modeler from "bpmn-js-token-simulation/lib/modeler";
 
 const moddle = new BpmnModdle();
 let simulationSupport = null;
 
-const defaultColor = {
-  stroke: "black",
-  fill: "white",
-};
-
-const yellow = {
-  stroke: "black",
-  fill: "green",
-};
-
-const fill = [];
-
-function BpmnModeler(url) {
+function BpmnFooter(url) {
   const [diagram, diagramSet] = useState("");
-  const [modeling, setModeling] = useState(null);
   const [upFile, upFileSet] = useState("");
   const [currentModeler, modelerSet] = useState(null);
   const container = document.getElementById("container");
@@ -54,10 +40,8 @@ function BpmnModeler(url) {
             bindTo: document,
           },
         });
-        /* simulationSupport = modeler.get("simulationSupport");
-        simulationSupport.toggleSimulation(true); */
-        var modeling = modeler.get("modeling");
-        setModeling(modeling);
+        simulationSupport = modeler.get("simulationSupport");
+        simulationSupport.toggleSimulation(true);
 
         //window.alert("WANT ME TO CONTINUE?");
         modelerSet(modeler);
@@ -67,13 +51,11 @@ function BpmnModeler(url) {
           if (err) {
           } else {
             var elementRegistry = modeler.get("elementRegistry");
-            console.log(elementRegistry);
             elementRegistry.forEach(function (elem, gfx) {
               if (elem.type === "bpmn:StartEvent") {
                 // do something with the task
-                console.log("Start", elem);
+                //console.log("Start", elem);
                 //simulationSupport.triggerElement(elem.id);
-                modeling.setColor(elem, yellow);
               }
             });
           }
@@ -88,11 +70,7 @@ function BpmnModeler(url) {
             var elementRegistry = currentModeler.get("elementRegistry");
             console.log(elementRegistry);
             //simulationSupport.triggerElement("Event_1sysx7h_di");
-            elementRegistry.forEach(function (elem, gfx) {
-              if (elem.type === "bpmn:Task") {
-                fill.push(elem);
-              }
-            });
+            elementRegistry.forEach(function (elem, gfx) {});
           }
         });
       }
@@ -140,47 +118,6 @@ function BpmnModeler(url) {
 
   return (
     <div className="bg-white">
-      <Button
-        type="primary"
-        onClick={OnClick}
-        style={{ background: "red", borderColor: "yellow" }}
-      >
-        Download
-      </Button>
-      <Upload
-        {...props}
-        beforeUpload={(file) => {
-          const reader = new FileReader();
-
-          reader.onload = (e) => {
-            upFileSet(e.target.result);
-            console.log("[Upload]", e.target.result);
-            console.log(moddle.fromXML(e.target.result));
-            diagramSet(e.target.result);
-          };
-          reader.readAsText(file);
-
-          // Prevent upload
-          return false;
-        }}
-      >
-        <Button
-          style={{ background: "red", borderColor: "yellow" }}
-          type="primary"
-        >
-          Import
-        </Button>
-      </Upload>
-      <Button
-        onClick={() => {
-          console.log(fill);
-          for (let i = 0; i < fill.length; i++) {
-            modeling.setColor(fill[i], yellow);
-          }
-        }}
-      >
-        Next
-      </Button>
       <div
         id="container"
         style={{
@@ -189,8 +126,8 @@ function BpmnModeler(url) {
           width: "80vw",
           margin: "auto",
         }}
-      ></div>
+      />
     </div>
   );
 }
-export default BpmnModeler;
+export default BpmnFooter;
