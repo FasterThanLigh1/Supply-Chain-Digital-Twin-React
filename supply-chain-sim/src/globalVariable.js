@@ -295,7 +295,7 @@ customer2.startEvent = start2;
 customer2.taskList = [start2, act3, instant1, act4, end2];
 /////
 
-export var VERTICES = [supplier, distributor, customer1, customer2];
+export var VERTICES = [supplier, customer2];
 export var CURRENT_GRAPH = new Graph();
 // adding vertices
 for (var i = 0; i < VERTICES.length; i++) {
@@ -303,8 +303,6 @@ for (var i = 0; i < VERTICES.length; i++) {
 }
 
 CURRENT_GRAPH.addEdge(0, 1);
-CURRENT_GRAPH.addEdge(1, 2);
-CURRENT_GRAPH.addEdge(1, 3);
 
 export const curData = {
   currentAgent: null,

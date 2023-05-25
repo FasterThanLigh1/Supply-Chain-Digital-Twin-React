@@ -126,65 +126,52 @@ function Inspector() {
 
   return (
     <div>
-      <Sider width={300}>
-        <Space direction="vertical" size={10}>
-          <Input
-            addonBefore={<Typography className="text-white">Name</Typography>}
-            value={thisName}
-          />
-          <Input
-            addonBefore={<Typography className="text-white">Type</Typography>}
-            value={thisType}
-          />
-          <InputNumber
-            addonBefore={
-              <Typography className="text-white">Latitude</Typography>
-            }
-            defaultValue="0"
-            value={thisX}
-            min="-90"
-            max="90"
-            step="0.00000000000001"
-            stringMode
-            onChange={(e) => {
-              curData.currentAgent.location.x = e;
-              dispatch(setX(e));
-            }}
-          />
-          <InputNumber
-            addonBefore={
-              <Typography className="text-white">Longtitude</Typography>
-            }
-            defaultValue="0"
-            value={thisY}
-            min="-180"
-            max="180"
-            step="0.00000000000001"
-            stringMode
-            onChange={(e) => {
-              curData.currentAgent.location.y = e;
-              dispatch(setY(e));
-            }}
-          />
-        </Space>
-        <Typography className="text-white">Task List:</Typography>
-        <List
-          itemLayout="horizontal"
-          dataSource={listItem}
-          renderItem={(item, index) => (
-            <List.Item>
-              <Button
-                onClick={() => {
-                  showModal(item.id);
-                }}
-                className="text-white"
-              >
-                {item.title}
-              </Button>
-            </List.Item>
-          )}
+      <Space direction="vertical" size={10}>
+        <Input addonBefore={<Typography>Name</Typography>} value={thisName} />
+        <Input addonBefore={<Typography>Type</Typography>} value={thisType} />
+        <InputNumber
+          addonBefore={<Typography>Latitude</Typography>}
+          defaultValue="0"
+          value={thisX}
+          min="-90"
+          max="90"
+          step="0.00000000000001"
+          stringMode
+          onChange={(e) => {
+            curData.currentAgent.location.x = e;
+            dispatch(setX(e));
+          }}
         />
-      </Sider>
+        <InputNumber
+          addonBefore={<Typography>Longtitude</Typography>}
+          defaultValue="0"
+          value={thisY}
+          min="-180"
+          max="180"
+          step="0.00000000000001"
+          stringMode
+          onChange={(e) => {
+            curData.currentAgent.location.y = e;
+            dispatch(setY(e));
+          }}
+        />
+      </Space>
+      <Typography>Task List:</Typography>
+      <List
+        itemLayout="horizontal"
+        dataSource={listItem}
+        renderItem={(item, index) => (
+          <List.Item>
+            <Button
+              onClick={() => {
+                showModal(item.id);
+              }}
+            >
+              {item.title}
+            </Button>
+          </List.Item>
+        )}
+      />
       <Modal
         title={name}
         open={openEvent}

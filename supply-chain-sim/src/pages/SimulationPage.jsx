@@ -2,7 +2,28 @@ import React, { useEffect } from "react";
 import { motion } from "framer-motion";
 import Mapbox from "../components/mapbox";
 import CustomSider from "../components/sider";
-import { Layout, Typography, theme, Input, Space, Button } from "antd";
+import {
+  Button,
+  Row,
+  Col,
+  Typography,
+  Form,
+  Input,
+  Switch,
+  Breadcrumb,
+  Layout,
+  Menu,
+  theme,
+} from "antd";
+import {
+  LaptopOutlined,
+  NotificationOutlined,
+  UserOutlined,
+  DribbbleOutlined,
+  TwitterOutlined,
+  InstagramOutlined,
+  GithubOutlined,
+} from "@ant-design/icons";
 import { useState } from "react";
 const { Header, Content, Footer, Sider } = Layout;
 import { useSelector, useDispatch } from "react-redux";
@@ -10,6 +31,25 @@ import { CURRENT_GRAPH } from "../globalVariable";
 import Inspector from "../components/inspector";
 import BpmnFooter from "../components/bpmnFooter";
 import Axios from "axios";
+import { MAIN_COLOR } from "../constants";
+
+const items2 = [UserOutlined, LaptopOutlined, NotificationOutlined].map(
+  (icon, index) => {
+    const key = String(index + 1);
+    return {
+      key: `sub${key}`,
+      icon: React.createElement(icon),
+      label: `subnav ${key}`,
+      children: new Array(4).fill(null).map((_, j) => {
+        const subKey = index * 4 + j + 1;
+        return {
+          key: subKey,
+          label: `option${subKey}`,
+        };
+      }),
+    };
+  }
+);
 
 function SimulationPage() {
   const dispatch = useDispatch();
@@ -28,10 +68,10 @@ function SimulationPage() {
     });
   };
 
-  const {
+  /*   const {
     token: { colorBgContainer },
-  } = theme.useToken();
-
+  } = theme.useToken(); */
+  const colorBgContainer = MAIN_COLOR;
   return (
     <motion.div
       className="container text-center"
@@ -40,24 +80,14 @@ function SimulationPage() {
       exit={{ opacity: 1 }}
       transition={{ duration: 0.75, ease: "easeOut" }}
     >
-      <Layout
+      {/* <Layout
         style={{
           minHeight: "100vh",
         }}
       >
         <CustomSider />
         <Layout className="site-layout">
-          {/* <Header
-            style={{
-              padding: 0,
-              background: colorBgContainer,
-              height: "0px",
-            }}
-          /> */}
           <Content
-            /* style={{
-              margin: "0 16px",
-            }} */
             style={{
               textAlign: "center",
               height: 480,
@@ -85,6 +115,96 @@ function SimulationPage() {
           </Footer>
         </Layout>
         <Inspector />
+      </Layout> */}
+      <Layout className="layout-default layout-signin">
+        <Content
+          style={{
+            padding: "0 50px",
+          }}
+        >
+          <Breadcrumb
+            style={{
+              margin: "16px 0",
+            }}
+            items={[
+              {
+                title: "Home",
+              },
+              {
+                title: <a href="">Application Center</a>,
+              },
+              {
+                title: <a href="">Application List</a>,
+              },
+              {
+                title: "An Application",
+              },
+            ]}
+          />
+          <Layout
+            style={{
+              padding: "24px 0",
+              background: colorBgContainer,
+            }}
+          >
+            <CustomSider colorBgContainer={colorBgContainer} />
+            {/* <Sider
+              style={{
+                background: colorBgContainer,
+              }}
+              width={200}
+            >
+              <Menu
+                mode="inline"
+                defaultSelectedKeys={["1"]}
+                defaultOpenKeys={["sub1"]}
+                style={{
+                  height: "100%",
+                }}
+                items={items2}
+              />
+            </Sider> */}
+            <Content
+              style={{
+                padding: "0 24px",
+                minHeight: 280,
+              }}
+            >
+              <Mapbox graph={CURRENT_GRAPH} />
+            </Content>
+          </Layout>
+          <Layout
+            style={{
+              padding: "24px 0",
+              background: colorBgContainer,
+            }}
+          >
+            <Sider
+              style={{
+                background: colorBgContainer,
+              }}
+              width={200}
+              height={1000}
+            >
+              <Inspector />
+            </Sider>
+            <Content
+              style={{
+                padding: "0 24px",
+                minHeight: 280,
+              }}
+            >
+              <BpmnFooter />
+            </Content>
+          </Layout>
+        </Content>
+        <Footer
+          style={{
+            textAlign: "center",
+          }}
+        >
+          Ant Design ©2023 Created by Ant UED
+        </Footer>
       </Layout>
     </motion.div>
   );

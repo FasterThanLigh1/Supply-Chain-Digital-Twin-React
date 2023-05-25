@@ -31,5 +31,7 @@ export const GATEWAY_TYPE = {
   EXCLUSIVE: "exclusive",
 };
 
+export const MAIN_COLOR = "rgba(255, 255, 255, 0.2)";
+
 export const ACTIVE_MARKERS = [];
 export const ACTIVE_ROUTE = [];

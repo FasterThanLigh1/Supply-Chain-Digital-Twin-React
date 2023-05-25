@@ -26,6 +26,15 @@ const participants = [
   },
 ];
 
+const statistic = [
+  {
+    ParticipantKey: "100",
+    SimulationKey: "201",
+    TotalInventory: "1000",
+    TotalBackorder: "20",
+  },
+];
+
 app.use(cors());
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -57,7 +66,7 @@ app.post("/new_simulation", (req, res) => {
     curDate.minute().toString() +
     "" +
     curDate.second().toString();
-  const sqlCreate = `insert into Simulation (UniqueKey, Date) values ('${simId}', CURDATE());`;
+  const sqlCreate = `insert into Simulation (SimulationKey,Date) values ('${simId}', CURDATE());`;
   db.query(sqlCreate, (err, result) => {
     if (err) throw err;
     res.send(result);
@@ -104,11 +113,42 @@ app.post("/insert_statistic", (req, res) => {
     curDate.minute().toString() +
     "" +
     curDate.second().toString();
+  const values = statistic
+    .map(
+      (p) =>
+        `('${p.ParticipantKey}', '${p.SimulationKey}','${p.TotalInventory}', '${p.TotalBackorder}', CURDATE())`
+    )
+    .join(",");
   const sqlCreate = `insert into Statistic (ParticipantKey, SimulationKey, TotalInventory, TotalBackorder, Date) values ${values};`;
   db.query(sqlCreate, (err, result) => {
     if (err) throw err;
     res.send(result);
   });
+});
+
+app.get("/get_simulation_list", (req, res) => {
+  const sqlGet = "select UniqueKey from simulation;";
+  db.query(sqlGet, (err, result) => {
+    if (err) throw err;
+    res.send(result);
+  });
+});
+
+app.get("/get_statistic/:id", (req, res) => {
+  const id = req.params.id;
+  console.log(id);
+  const sqlGet = `select statistic.UniqueKey, statistic.ParticipantKey, statistic.TotalInventory,
+statistic.TotalBackorder, statistic.Date, statistic.SimulationKey, participants.name
+from statistic inner join simulation on
+statistic.SimulationKey = simulation.SimulationKey inner join participants
+on statistic.SimulationKey = participants.SimulationKey and
+statistic.ParticipantKey = participants.ParticipantKey where participants.SimulationKey = ${id};`;
+  db.query(sqlGet, (err, result) => {
+    if (err) throw err;
+    res.send(result);
+  });
+  
+  //res.send(`<h1>${req.params.id}</h1>`);
 });
 
 app.post("/create_participants_table", (req, res) => {

@@ -36,7 +36,7 @@ export const items = [
   getItem("Files", "9", <FileOutlined />),
 ];
 
-function CustomSider() {
+function CustomSider(colorBgContainer) {
   const dispatch = useDispatch();
   const [menuItem, setMenuItem] = useState(items);
   const [collapsed, setCollapsed] = useState(false);
@@ -77,21 +77,24 @@ function CustomSider() {
 
   return (
     <Sider
-      collapsible
-      collapsed={collapsed}
-      onCollapse={(value) => setCollapsed(value)}
+      style={{
+        background: colorBgContainer,
+      }}
+      width={200}
     >
       <div
         style={{
-          height: 32,
+          height: 16,
           margin: 16,
-          background: "rgba(255, 255, 255, 0.2)",
+          color: "white",
         }}
       >
-        Agents
+        AGENTS
       </div>
       <Menu
-        theme="dark"
+        style={{
+          height: "100%",
+        }}
         defaultSelectedKeys={["1"]}
         mode="inline"
         items={menuItem}
