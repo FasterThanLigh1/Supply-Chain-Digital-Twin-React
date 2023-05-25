@@ -1,5 +1,6 @@
-import { RunState } from ".";
+import { RUN_STATE } from ".";
 import { runShipment } from "./callback";
+import _ from "lodash";
 
 class Node {
   constructor(id, data) {
@@ -50,13 +51,17 @@ class Agent {
     this.type = type;
     this.transport = [];
     this.route = null;
-    this.runState = RunState.CanRun;
+    this.runState = RUN_STATE.CAN_RUN;
     this.taskList = [];
     this.id = id;
     this.customerDemand = [];
     this.demand = [];
     this.backOrder = [];
     this.prev = null;
+    this.data = {
+      totalBackOrder: 0,
+      totalInventory: 0,
+    };
   }
   /* addBulk(cargo) {
     for (let i = 0; i < cargo.length; i++) {
@@ -64,12 +69,14 @@ class Agent {
     }
   } */
   addInventory(item, quantity) {
-    console.log("Before:", this.inventory, " and ", item);
-    for (let i = 0; i < this.inventory.length; i++) {
-      if (this.inventory[i].name === item.name) {
-        this.inventory[i].quantity += quantity;
+    const temp = _.cloneDeep(this.inventory);
+    console.log("Before:", temp, " and ", item);
+    for (let i = 0; i < temp.length; i++) {
+      if (temp[i].name === item.name) {
+        temp[i].quantity += quantity;
       }
     }
+    this.inventory = temp;
     console.log("After:", this.inventory);
   }
   removeInventory(item, quantity) {
@@ -117,7 +124,8 @@ class Agent {
       console.log(obj.customerDemand);
       obj.customerDemand[i].transport.loadBulk(obj.customerDemand[i].demand);
     }
-    obj.runState = RunState.CanRun;
+    obj.calcEverything(obj);
+    obj.runState = RUN_STATE.CAN_RUN;
   }
   unload(obj) {
     console.log(obj);
@@ -135,25 +143,7 @@ class Agent {
       //clear cargo
       obj.transport[i].cargo.length = 0;
     }
-    obj.runState = RunState.CanRun;
-  }
-  unload2(obj) {
-    console.log(obj);
-    for (let i = 0; i < obj.transport.length; i++) {
-      if (obj.transport[i].cargo.length == 0) {
-        console.log("No cargo ?");
-        return;
-      }
-      for (let j = 0; j < obj.transport[i].cargo.length; j++) {
-        obj.transport[i].unload(
-          obj.transport[i].cargo[j],
-          obj.transport[i].cargo[j].quantity
-        );
-      }
-      //clear cargo
-      obj.transport[i].cargo.length = 0;
-    }
-    obj.runState = RunState.CanRun;
+    obj.runState = RUN_STATE.CAN_RUN;
   }
   checkDemand(obj) {
     for (let i = 0; i < obj.customerDemand.length; i++) {
@@ -166,21 +156,49 @@ class Agent {
       obj.transport[i].move();
     }
     const id = "peep" + this.name;
-    runShipment(obj.route, id, obj, [
+    runShipment(obj.route, id, obj, this.transport[0], [
       () => {
         console.log("Finish shipment");
+        this.unload(obj);
       },
     ]);
     console.log(this.transport);
   }
   print(obj) {
-    console.log(obj.name);
-    obj.runState = RunState.CanRun;
+    //console.log(obj.name);
+    obj.runState = RUN_STATE.CAN_RUN;
   }
   printWhole(obj) {
-    console.log(obj);
-    obj.inventory[0].name = "gy";
-    obj.runState = RunState.CanRun;
+    /* console.log(obj);
+    const temp = _.cloneDeep(obj.inventory);
+    temp[0].name = "gyaa";
+    obj.inventory = temp; */
+    /* obj.inventory[0].name = "gyaa"; */
+    obj.runState = RUN_STATE.CAN_RUN;
+  }
+  calcTotalInventory(obj) {
+    let res = 0;
+    for (let i = 0; i < obj.inventory.length; i++) {
+      res += obj.inventory[i].quantity;
+    }
+    this.totalInventory = res;
+    console.log("Calc: ", this.totalInventory);
+  }
+  calcBackOrder(obj) {
+    if (obj.backOrder.length == 0) {
+      console.log("back order empty");
+      return;
+    }
+    let res = 0;
+    for (let i = 0; i < obj.backOrder.length; i++) {
+      res += obj.backOrder[i].quantity;
+    }
+    this.totalBackOrder = res;
+    console.log("Calc: ", this.totalBackOrder);
+  }
+  calcEverything(obj) {
+    this.calcTotalInventory(obj);
+    this.calcBackOrder(obj);
   }
 }
 class BpmnNode {
@@ -197,10 +215,11 @@ class BpmnNode {
     this.hasRun = false;
   }
   run(obj) {
-    console.log(this.name);
+    console.log(obj.name + " | " + this.name);
     if (this.hasRun) {
       console.log("has run and run only once");
-      obj.runState = RunState.CanRun;
+      obj.runState = RUN_STATE.CAN_RUN;
+      this.hasRun = false;
       return;
     } else {
       this.hasRun = true;
@@ -261,15 +280,14 @@ class Transportation {
   load(item, quantity) {
     console.log("Load");
     const temp = this.src.removeInventory(item, quantity);
-    console.log("Capacity before: ", this.curCapacity, this.capacity);
+    console.log("Vehicle Capacity before: ", this.curCapacity, this.capacity);
     if (this.curCapacity + temp.quantity >= this.capacity) {
-      alert("Not enough capacity to load !");
+      alert("Not enough capacity to load Vehicle !");
       return;
     }
-    console.log("current capacity:", this.curCapacity, temp);
     this.curCapacity += temp.quantity;
     this.cargo.push(temp);
-    console.log("Capacity after: ", this.curCapacity, this.capacity);
+    console.log("Vehicle  Capacity after: ", this.curCapacity, this.capacity);
     console.log("Back log: ", this.src.backOrder);
   }
   loadBulk(items) {

@@ -2,16 +2,31 @@ import React, { useEffect } from "react";
 import { motion } from "framer-motion";
 import Mapbox from "../components/mapbox";
 import CustomSider from "../components/sider";
-import { Layout, Typography, theme, Input, Space } from "antd";
+import { Layout, Typography, theme, Input, Space, Button } from "antd";
 import { useState } from "react";
 const { Header, Content, Footer, Sider } = Layout;
 import { useSelector, useDispatch } from "react-redux";
-import { CurrentGraph } from "../globalVariable";
+import { CURRENT_GRAPH } from "../globalVariable";
 import Inspector from "../components/inspector";
 import BpmnFooter from "../components/bpmnFooter";
+import Axios from "axios";
 
 function SimulationPage() {
   const dispatch = useDispatch();
+
+  /* useEffect(() => {
+    Axios.get("http://localhost:8080/get").then((response) => {
+      console.log(response.data);
+    });
+  }); */
+
+  const testSubmit = () => {
+    Axios.post("http://localhost:8080/post", {
+      data: 30,
+    }).then(() => {
+      console.log("success");
+    });
+  };
 
   const {
     token: { colorBgContainer },
@@ -54,7 +69,7 @@ function SimulationPage() {
                 background: colorBgContainer,
               }}
             >
-              <Mapbox graph={CurrentGraph} />
+              <Mapbox graph={CURRENT_GRAPH} />
             </div>
           </Content>
           <Footer
@@ -65,6 +80,7 @@ function SimulationPage() {
           >
             <div className="customer-footer">
               <BpmnFooter />
+              <Button onClick={testSubmit}>Yes</Button>
             </div>
           </Footer>
         </Layout>

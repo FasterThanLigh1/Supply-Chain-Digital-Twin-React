@@ -2,26 +2,113 @@ import * as turf from "@turf/turf";
 import carImage from "../../public/Image/truck.png";
 import mapboxgl from "mapbox-gl"; // eslint-disable-line import/no-webpack-loader-syntax
 import { Map } from "../globalVariable";
-import { RunState } from ".";
+import {
+  RUN_STATE,
+  AGENT_TYPE,
+  EVENT_START_TYPE,
+  EVENT_TYPE,
+  GATEWAY_TYPE,
+} from ".";
 
-export const PrintHello = () => {
-  console.log("Hello world");
+export const execute = (obj, curTime) => {
+  //console.log(obj.startEvent);
+  console.log("[RUN] " + obj.name + " | Current Hour: " + curTime);
+  //console.log(obj.processes);
+  if (obj.runState === RUN_STATE.RUNNING) return;
+  obj.runState = RUN_STATE.RUNNING;
+  if (obj.processes.length < 1) {
+    if (obj.startEvent.startType === EVENT_START_TYPE.TIMER) {
+      if (obj.startEvent.startTime == curTime) {
+        obj.startEvent.run(obj);
+        obj.processes.push({
+          task: obj.startEvent.next,
+          duration: obj.startEvent.next.duration,
+          curDuration: 1,
+        });
+      } else {
+        obj.runState = RUN_STATE.CAN_RUN;
+      }
+    } else {
+      obj.runState = RUN_STATE.CAN_RUN;
+    }
+  } else {
+    for (let i = 0; i < obj.processes.length; i++) {
+      if (obj.processes[i].task.type === EVENT_TYPE.END) {
+        obj.processes[i].task.run(obj);
+        obj.processes.splice(i, 1);
+        i--;
+        continue;
+      } else if (obj.processes[i].task.type === GATEWAY_TYPE.PARALLEL) {
+        for (let j = 0; j < obj.processes[i].task.next.length; j++) {
+          if (
+            obj.processes[i].task.next[j].startType !== EVENT_START_TYPE.MESSAGE
+          ) {
+            obj.processes.push({
+              task: obj.processes[i].task.next[j],
+              duration: obj.processes[i].task.next[j].duration,
+              curDuration: 1,
+            });
+          }
+        }
+        //console.log("After:", obj.processes);
+        obj.processes.splice(0, 1);
+        i--;
+      } else {
+        if (obj.processes[i].curDuration >= obj.processes[i].duration) {
+          obj.processes[i].task.run(obj);
+          if (obj.runState === RUN_STATE.RUNNING) continue;
+          if (obj.processes[i].task.throw !== null) {
+            obj.processes[i].task.throw.processes.push({
+              task: obj.processes[i].task.throwEvent,
+              duration: obj.processes[i].task.throw.startEvent.duration,
+              curDuration: 1,
+            });
+          }
+          if (
+            obj.processes[i].task.next.startType === EVENT_START_TYPE.MESSAGE
+          ) {
+            obj.processes.splice(i, 1);
+            i--;
+            continue;
+          }
+          if (obj.processes[i].task.next.type === GATEWAY_TYPE.EXCLUSIVE) {
+            if (check(curTime, 6)) {
+              obj.processes[i].task = obj.processes[i].task.next.next[1];
+            } else {
+              obj.processes[i].task = obj.processes[i].task.next.next[0];
+            }
+          } else {
+            obj.processes[i].task = obj.processes[i].task.next;
+          }
+
+          obj.processes[i].curDuration = 1;
+          obj.processes[i].duration = obj.processes[i].task.duration;
+        } else {
+          obj.processes[i].curDuration += 1;
+          obj.runState = RUN_STATE.CAN_RUN;
+        }
+        /* obj.processes[i].task.run(obj);
+        if (obj.processes[i].task.next != null) {
+          obj.processes[i].task = obj.processes[i].task.next;
+        } */
+      }
+    }
+  }
 };
 
-export const Print = () => {
-  console.log("Hello");
-};
-
-export const runShipment = (step, id, obj, onFinishCallBack) => {
+export const runShipment = (step, id, obj, vehicle, onFinishCallBack) => {
   if (Map.current.getLayer(id)) return;
 
   /* dispatch(setState(true)); */
+  console.log("Step: ", step);
+  var length = turf.length(step, { units: "kilometers" });
+  console.log("Turf length: ", length);
   var iPathLength = turf.lineDistance(step, "kilometers");
+  console.log("Path Length: ", iPathLength);
   var iPoint = turf.along(step, 0, "kilometers");
   var rep = 0;
-  console.log("is running ", rep);
-  var numSteps = 500; //Change this to set animation resolution
-  var timePerStep = 20; //Change this to alter animation speed
+  var numSteps = iPathLength; //Change this to set animation resolution
+  var timePerStep = 1000; //Change this to alter animation speed
   Map.current.addSource(id, {
     type: "geojson",
     data: iPoint,
@@ -50,17 +137,17 @@ export const runShipment = (step, id, obj, onFinishCallBack) => {
   });
   var pSource = Map.current.getSource(id);
   var interval = setInterval(function () {
-    rep += 1;
+    rep += 50;
     if (rep > numSteps) {
       if (Map.current.hasImage("cat" + id)) {
-        console.log(obj);
+        console.log("[End shipment]");
         Map.current.removeImage("cat" + id);
         Map.current.removeLayer(id);
         Map.current.removeSource(id);
         for (let i = 0; i < onFinishCallBack.length; i++) {
           onFinishCallBack[i]();
         }
-        obj.runState = RunState.CanRun;
+        obj.runState = RUN_STATE.CAN_RUN;
         clearInterval(interval);
       }
     } else {

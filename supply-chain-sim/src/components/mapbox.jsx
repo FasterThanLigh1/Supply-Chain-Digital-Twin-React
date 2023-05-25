@@ -2,26 +2,42 @@ import React from "react";
 import { useEffect, useRef, useState } from "react";
 import { Button, Typography, Modal, DatePicker, Space } from "antd";
 import mapboxgl from "mapbox-gl"; // eslint-disable-line import/no-webpack-loader-syntax
-import { AgentType, mapaboxAcessToken } from "../constants";
+import { AGENT_TYPE, mapaboxAcessToken } from "../constants";
 import * as turf from "@turf/turf";
 import carImage from "../../public/Image/truck.png";
-import { activeMarkers, activeRoute } from "../constants";
+import { ACTIVE_MARKERS, ACTIVE_ROUTE } from "../constants";
 import { useDispatch, useSelector } from "react-redux";
 import { setState, selectState } from "../features/stateSlice";
 import { selectAdjList } from "../features/graphSlice";
 import { UseInterval } from "../ultils/CustomHooks";
 import dayjs from "dayjs";
-import { execute } from "../constants/test";
-import { CurrentGraph, supplier, distributor } from "../globalVariable";
+import { execute } from "../constants/callback";
+import {
+  CURRENT_GRAPH,
+  supplier,
+  distributor,
+  customer2,
+} from "../globalVariable";
 import { Map } from "../globalVariable";
 import { setCurrentDate, selectCurrentDate } from "../features/dateSlice";
+import Axios from "axios";
+import { update } from "lodash";
 
 mapboxgl.accessToken = mapaboxAcessToken;
 const { RangePicker } = DatePicker;
 
+const postInventory = (inventory) => {
+  Axios.post("http://localhost:8080/post", {
+    data: inventory,
+  }).then(() => {
+    ////console.log("success");
+  });
+};
+
 function Mapbox({ graph }) {
   const mapContainer = useRef(null);
   const [curDate, setCurDate] = useState(dayjs());
+  const [endDate, setEndDate] = useState(dayjs());
   const map = useRef(null);
   const [lng, setLng] = useState(-70.9);
   const [lat, setLat] = useState(42.35);
@@ -44,7 +60,7 @@ function Mapbox({ graph }) {
     const json = await query.json();
     const data = json.routes[0];
     if (data === undefined) return;
-    console.log(data);
+    //console.log(data);
     const route = data.geometry.coordinates;
     const geojson = {
       type: "Feature",
@@ -54,7 +70,7 @@ function Mapbox({ graph }) {
         coordinates: route,
       },
     };
-    activeRoute.push(geojson.geometry);
+    ACTIVE_ROUTE.push(geojson.geometry);
     const length = turf.length(geojson.geometry, { units: "kilometers" });
 
     // if the route already exists on the map, we'll reset it using setData
@@ -96,11 +112,11 @@ function Mapbox({ graph }) {
       includeGeometry: true,
     });
     for (let i = 0; i < graph.getLength(); i++) {
-      console.log(graph);
+      //console.log(graph);
       initMarker(graph.AdjList[i].data);
     }
     map.current.on("click", (event) => {
-      console.log("click");
+      //console.log("click");
     });
     Map.current = map.current;
   });
@@ -116,7 +132,7 @@ function Mapbox({ graph }) {
 
   const runShipment = (step, id, onFinishCallBack) => {
     if (state === true) {
-      console.log("Still running");
+      //console.log("Still running");
       return;
     }
     if (map.current.getLayer(id)) return;
@@ -125,7 +141,7 @@ function Mapbox({ graph }) {
     var iPathLength = turf.lineDistance(step, "kilometers");
     var iPoint = turf.along(step, 0, "kilometers");
     var rep = 0;
-    console.log("is running ", rep);
+    //console.log("is running ", rep);
     var numSteps = 500; //Change this to set animation resolution
     var timePerStep = 20; //Change this to alter animation speed
     map.current.addSource(id, {
@@ -170,13 +186,21 @@ function Mapbox({ graph }) {
         var curDistance = (rep / numSteps) * iPathLength;
         var iPoint = turf.along(step, curDistance, "kilometers");
         pSource.setData(iPoint);
-        //console.log(curDistance);
+        ////console.log(curDistance);
       }
     }, timePerStep);
   };
 
+  const endSim = () => {
+    //console.log("end sim called");
+  };
+
   const [isRun, setIsRun] = useState(null);
   UseInterval(() => {
+    simulation();
+  }, isRun);
+
+  const simulation = () => {
     //console.log(curDate.hour());
     console.log(
       curDate.date() +
@@ -188,26 +212,39 @@ function Mapbox({ graph }) {
         curDate.hour()
     );
 
-    for (let i = 0; i < CurrentGraph.AdjList.length; i++) {
-      console.log(CurrentGraph.AdjList);
-      execute(CurrentGraph.AdjList[i].data, curDate.hour());
+    if (curDate.diff(endDate, "day") == 0) {
+      endSim();
+      setIsRun(null);
+    }
+
+    for (let i = 0; i < CURRENT_GRAPH.AdjList.length; i++) {
+      //console.log(CurrentGraph.AdjList);
+      execute(CURRENT_GRAPH.AdjList[i].data, curDate.hour());
     }
     /*  execute(supplier, curDate.hour());
     execute(distributor, curDate.hour()); */
 
     setCurDate((prev) => prev.add(1, "hour"));
-  }, isRun);
+    if (curDate.hour() == 0) {
+      updateDatabase(supplier);
+      updateDatabase(customer2);
+    }
+  };
+
+  const updateDatabase = (obj) => {
+    console.log("A new day");
+  };
 
   const onClickSimulate = () => {
     if (state === true) {
-      console.log("Still running");
+      //console.log("Still running");
       return;
     }
     for (let i = 0; i < graph.getLength(); i++) {
-      for (let j = 0; j < activeMarkers.length; j++) {
-        console.log(graph.AdjList[i].data.name);
-        if (graph.AdjList[i].data.name == activeMarkers[j].id) {
-          activeMarkers[j].marker.setLngLat([
+      for (let j = 0; j < ACTIVE_MARKERS.length; j++) {
+        //console.log(graph.AdjList[i].data.name);
+        if (graph.AdjList[i].data.name == ACTIVE_MARKERS[j].id) {
+          ACTIVE_MARKERS[j].marker.setLngLat([
             graph.AdjList[i].data.location.x,
             graph.AdjList[i].data.location.y,
           ]);
@@ -231,17 +268,22 @@ function Mapbox({ graph }) {
         }
       }
     }
+
+    for (let i = 0; i < CURRENT_GRAPH.AdjList.length - 1; i++) {
+      CURRENT_GRAPH.AdjList[i].data.route = ACTIVE_ROUTE[i];
+    }
+    console.log(CURRENT_GRAPH.AdjList);
   };
 
   const initMarker = (agent) => {
     const el = document.createElement("div");
-    if (agent.type === AgentType.Supplier) {
+    if (agent.type === AGENT_TYPE.SUPPLIER) {
       el.className = "marker-supplier";
-    } else if (agent.type === AgentType.Distributor) {
+    } else if (agent.type === AGENT_TYPE.DISTRIBUTOR) {
       el.className = "marker-distributor";
-    } else if (agent.type === AgentType.Manufacturer) {
+    } else if (agent.type === AGENT_TYPE.MANUFACTURER) {
       el.className = "marker-manufacturer";
-    } else if (agent.type === AgentType.Customer) {
+    } else if (agent.type === AGENT_TYPE.CUSTOMER) {
       el.className = "marker-customer";
     }
 
@@ -255,7 +297,7 @@ function Mapbox({ graph }) {
       .setLngLat([agent.location.x, agent.location.y])
       .addTo(map.current)
       .setPopup(popup);
-    activeMarkers.push({
+    ACTIVE_MARKERS.push({
       id: agent.name,
       marker: temp,
     });
@@ -268,36 +310,33 @@ function Mapbox({ graph }) {
       setIsRun(1000);
     }
     if (state === true) {
-      console.log("Still running");
+      //console.log("Still running");
       return;
     }
     dispatch(setState(true));
-
-    for (let i = 0; i < CurrentGraph.AdjList.length - 1; i++) {
-      CurrentGraph.AdjList[i].data.route = activeRoute[i];
-    }
-    console.log("List: ", CurrentGraph.AdjList);
+    //console.log("List: ", CurrentGraph.AdjList);
     /* const id = "peep" + 0;
     runShipment(supplier.route, id, () => {
-      console.log("finished running callback");
+      //console.log("finished running callback");
     }); */
     /* for (let i = 0; i < activeRoute.length; i++) {
       const id = "peep" + i.toString();
-      console.log(id);
+      //console.log(id);
       runShipment(activeRoute[i], id, () => {
-        console.log("finished running callback");
+        //console.log("finished running callback");
       });
     } */
   };
 
   const handleDateOk = () => {
-    console.log("OK");
+    //console.log("OK");
     setIsModalOpen(false);
   };
 
   const onChangeDate = (value, dateString) => {
-    console.log("Selected Time: ", value);
+    //console.log("Selected Time: ", value);
     SetDate(value[0]);
+    setEndDate(value[1]);
   };
 
   const SetDate = (date) => {
@@ -330,9 +369,10 @@ function Mapbox({ graph }) {
       <Button
         style={{ background: "red", borderColor: "yellow" }}
         onClick={() => {
-          console.log("test");
+          //console.log("test");
           supplier.load(supplier);
-          distributor.printWhole(distributor);
+          customer2.printWhole(customer2);
+          postInventory(supplier.inventory);
         }}
       >
         Ship
@@ -340,11 +380,17 @@ function Mapbox({ graph }) {
       <Button
         style={{ background: "red", borderColor: "yellow" }}
         onClick={() => {
-          console.log("test");
+          //console.log("test");
           supplier.unload(supplier);
         }}
       >
         Unload
+      </Button>
+      <Button
+        style={{ background: "red", borderColor: "yellow" }}
+        onClick={simulation}
+      >
+        Next
       </Button>
       <Typography>
         Lat: {lat} | Lng: {lng} | Zoom: {zoom}

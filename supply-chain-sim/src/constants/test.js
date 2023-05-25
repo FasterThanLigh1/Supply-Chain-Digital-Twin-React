@@ -335,96 +335,6 @@ class Agent {
   }
 }
 
-const execute = (obj, curTime) => {
-  //console.log(obj.startEvent);
-  console.log("[RUN] " + obj.name + " " + curTime);
-  console.log(obj.processes);
-  if (obj.runState === RunState.Running) return;
-  obj.runState = RunState.Running;
-  if (obj.processes.length < 1) {
-    if (obj.startEvent.startType === EventStartType.Timer) {
-      console.log(obj.startEvent.startTime);
-      if (obj.startEvent.startTime == curTime) {
-        console.log("Start timer");
-        obj.startEvent.run(obj);
-        obj.processes.push({
-          task: obj.startEvent.next,
-          duration: obj.startEvent.next.duration,
-          curDuration: 1,
-        });
-      } else {
-        obj.runState = RunState.CanRun;
-      }
-    } else {
-      obj.runState = RunState.CanRun;
-    }
-  } else {
-    console.log("Increase");
-    for (let i = 0; i < obj.processes.length; i++) {
-      if (obj.processes[i].task.type === EventType.End) {
-        obj.processes[i].task.run(obj);
-        obj.processes.splice(i, 1);
-        i--;
-        continue;
-      } else if (obj.processes[i].task.type === GatewayType.Parallel) {
-        console.log("In parallel");
-        for (let j = 0; j < obj.processes[i].task.next.length; j++) {
-          if (
-            obj.processes[i].task.next[j].startType !== EventStartType.Message
-          ) {
-            obj.processes.push({
-              task: obj.processes[i].task.next[j],
-              duration: obj.processes[i].task.next[j].duration,
-              curDuration: 1,
-            });
-          }
-        }
-        //console.log("After:", obj.processes);
-        obj.processes.splice(0, 1);
-        i--;
-      } else {
-        if (obj.processes[i].curDuration >= obj.processes[i].duration) {
-          obj.processes[i].task.run(obj);
-          if (obj.runState === RunState.Running) continue;
-          if (obj.processes[i].task.throw !== null) {
-            obj.processes[i].task.throw.processes.push({
-              task: obj.processes[i].task.throwEvent,
-              duration: obj.processes[i].task.throw.startEvent.duration,
-              curDuration: 1,
-            });
-            console.log("After throw: ", obj.processes[i].task.throw.processes);
-          }
-          if (obj.processes[i].task.next.startType === EventStartType.Message) {
-            obj.processes.splice(i, 1);
-            i--;
-            continue;
-          }
-          if (obj.processes[i].task.next.type === GatewayType.Exclusive) {
-            if (check(curTime, 6)) {
-              obj.processes[i].task = obj.processes[i].task.next.next[1];
-            } else {
-              obj.processes[i].task = obj.processes[i].task.next.next[0];
-            }
-          } else {
-            obj.processes[i].task = obj.processes[i].task.next;
-          }
-
-          obj.processes[i].curDuration = 1;
-          obj.processes[i].duration = obj.processes[i].task.duration;
-        } else {
-          console.log("Increase");
-          obj.processes[i].curDuration += 1;
-          obj.runState = RunState.CanRun;
-        }
-        /* obj.processes[i].task.run(obj);
-        if (obj.processes[i].task.next != null) {
-          obj.processes[i].task = obj.processes[i].task.next;
-        } */
-      }
-    }
-  }
-};
-
 const supplier = new Agent(
   "supplier",
   25,
@@ -760,5 +670,4 @@ export {
   t1,
   g,
   curData,
-  execute,
 };

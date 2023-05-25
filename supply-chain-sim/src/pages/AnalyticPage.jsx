@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Layout, Menu, theme } from "antd";
 import { useState } from "react";
 import CustomSider from "../components/sider";
+import LineChartVisualizer from "../components/lineChart";
 const { Header, Content, Footer, Sider } = Layout;
 function AnalyticPage() {
   const {
@@ -42,7 +43,7 @@ function AnalyticPage() {
                 background: colorBgContainer,
               }}
             >
-              Bill is a cat.
+              <LineChartVisualizer />
             </div>
           </Content>
           <Footer

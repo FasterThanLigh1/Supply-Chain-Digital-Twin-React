@@ -45,6 +45,7 @@ body {
 .marker-supplier {
   background-image: url("../public/Image/factory.png");
   border: solid black;
+  background-color: white;
   background-size: cover;
   width: 50px;
   height: 50px;
@@ -55,6 +56,7 @@ body {
 .marker-manufacturer {
   background-image: url("../public/Image/factory.png");
   border: solid black;
+  background-color: white;
   background-size: cover;
   width: 50px;
   height: 50px;
@@ -65,6 +67,7 @@ body {
 .marker-distributor {
   background-image: url("../public/Image/warehouse.png");
   border: solid black;
+  background-color: white;
   background-size: cover;
   width: 50px;
   height: 50px;
@@ -75,6 +78,7 @@ body {
 .marker-distribution-center {
   background-image: url("../public/Image/warehouse.png");
   border: solid black;
+  background-color: white;
   background-size: cover;
   width: 50px;
   height: 50px;
@@ -85,6 +89,7 @@ body {
 .marker-customer {
   background-image: url("../public/Image/store.png");
   border: solid black;
+  background-color: white;
   background-size: cover;
   width: 50px;
   height: 50px;
@@ -94,6 +99,7 @@ body {
 
 .marker-vehicle {
   background-image: url("../public/Image/truck.png");
+  background-color: white;
   border: solid black;
   background-size: cover;
   width: 50px;

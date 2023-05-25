@@ -20,6 +20,7 @@
     "bpmn-js-token-simulation": "^0.31.0",
     "dayjs": "^1.11.7",
     "framer-motion": "^10.12.7",
+    "geojson-length": "^0.1.1",
     "lodash": "^4.17.21",
     "mapbox-gl": "^2.14.1",
     "react": "^18.2.0",
@@ -27,7 +28,8 @@
     "react-dom": "^18.2.0",
     "react-redux": "^8.0.5",
     "react-router-dom": "^6.11.1",
-    "react-router-native": "^6.11.1"
+    "react-router-native": "^6.11.1",
+    "recharts": "^2.6.2"
   },
   "devDependencies": {
     "@types/react": "^18.0.28",

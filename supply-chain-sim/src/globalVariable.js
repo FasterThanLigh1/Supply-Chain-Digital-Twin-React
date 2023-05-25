@@ -7,8 +7,12 @@ import {
   Gateway,
   Transportation,
 } from "./constants/class";
-import { AgentType, RunState, EventType, EventStartType } from "./constants";
-import { runShipment } from "./constants/callback";
+import {
+  AGENT_TYPE,
+  RUN_STATE,
+  EVENT_TYPE,
+  EVENT_START_TYPE,
+} from "./constants";
 
 export const supplier = new Agent(
   "supplier",
@@ -17,7 +21,47 @@ export const supplier = new Agent(
   [
     {
       name: "apple",
-      quantity: 50,
+      quantity: 1000,
+      price: 50,
+      cost: 40,
+    },
+    {
+      name: "pearl",
+      quantity: 1000,
+      price: 60,
+      cost: 20,
+    },
+  ],
+  null,
+  AGENT_TYPE.SUPPLIER,
+  "id_01"
+);
+
+export const distributor = new Agent(
+  "distributor",
+  -97,
+  37.5,
+  [
+    {
+      name: "apple",
+      quantity: 30,
+      price: 10,
+      cost: 5,
+    },
+  ],
+  null,
+  AGENT_TYPE.DISTRIBUTOR,
+  "dis_01"
+);
+
+export const customer2 = new Agent(
+  "customer2",
+  -96,
+  38,
+  [
+    {
+      name: "apple",
+      quantity: 100,
       price: 50,
       cost: 40,
     },
@@ -29,13 +73,13 @@ export const supplier = new Agent(
     },
   ],
   null,
-  AgentType.Supplier,
-  "id_01"
+  AGENT_TYPE.CUSTOMER,
+  "id_03"
 );
 
-export const distributor = new Agent(
-  "distributor",
-  -93,
+export const customer1 = new Agent(
+  "customer1",
+  -95,
   36,
   [
     {
@@ -46,18 +90,8 @@ export const distributor = new Agent(
     },
   ],
   null,
-  AgentType.distributor,
+  AGENT_TYPE.CUSTOMER,
   "dis_01"
-);
-
-export const customer2 = new Agent(
-  "customer2",
-  -96,
-  38,
-  [],
-  null,
-  AgentType.Supplier,
-  "id_03"
 );
 
 supplier.demand = [
@@ -105,14 +139,7 @@ distributor.demand = [
 ];
 
 /* export const t1 = new Transportation("Truck", supplier, customer2, 300, []); */
-export const t1 = new Transportation("Truck", supplier, distributor, 300, []);
-
-customer2.inventory.push({
-  name: "apple",
-  quantity: 45,
-  price: 50,
-  cost: 40,
-});
+export const t1 = new Transportation("Truck", supplier, customer2, 300, []);
 
 supplier.customerDemand = [
   {
@@ -138,8 +165,8 @@ const start1 = new Event(
   "receive order",
   null,
   1,
-  EventType.Start,
-  EventStartType.Message,
+  EVENT_TYPE.START,
+  EVENT_START_TYPE.MESSAGE,
   2,
   [supplier.print.bind(supplier)],
   "star1"
@@ -152,7 +179,6 @@ const act1 = new Activity(
     supplier.print.bind(supplier),
     supplier.checkDemand.bind(supplier),
     supplier.load.bind(supplier),
-    /* supplier.unload.bind(supplier), */
   ],
   "act1"
 );
@@ -167,8 +193,8 @@ const end1 = new Event(
   "close order",
   null,
   0,
-  EventType.End,
-  EventStartType.Auto,
+  EVENT_TYPE.END,
+  EVENT_START_TYPE.AUTO,
   2,
   [supplier.print.bind(supplier)],
   "end1"
@@ -183,8 +209,8 @@ const start3 = new Event(
   "Open",
   null,
   1,
-  EventType.Start,
-  EventStartType.Timer,
+  EVENT_TYPE.START,
+  EVENT_START_TYPE.TIMER,
   4,
   [distributor.printWhole.bind(distributor)],
   "start3"
@@ -200,8 +226,8 @@ const end4 = new Event(
   "Close",
   null,
   1,
-  EventType.End,
-  EventStartType.Auto,
+  EVENT_TYPE.END,
+  EVENT_START_TYPE.AUTO,
   0,
   [],
   "cose"
@@ -216,10 +242,10 @@ const start2 = new Event(
   "Open Store",
   null,
   1,
-  EventType.Start,
-  EventStartType.Timer,
+  EVENT_TYPE.START,
+  EVENT_START_TYPE.TIMER,
   8,
-  [customer2.print.bind(customer2), customer2.printWhole],
+  [customer2.print.bind(customer2)],
   "start2"
 );
 const act3 = new Activity(
@@ -229,54 +255,56 @@ const act3 = new Activity(
   [customer2.print.bind(customer2)],
   "act3"
 );
-/* const instant1 = new Event(
+const instant1 = new Event(
   "Receive shipment",
   null,
   1,
-  EventType.Intermediate,
-  EventStartType.Message,
+  EVENT_TYPE.INTERMEDIATE,
+  EVENT_START_TYPE.MESSAGE,
   2,
-  [customer2.printWhole.bind(customer2)],
+  [customer2.print.bind(customer2)],
   "inst1"
 );
 const act4 = new Activity(
   "Unload",
   null,
   4,
-  [customer1.print.bind(customer2)],
+  [customer2.print.bind(customer2)],
   "act4"
-); */
+);
 const end2 = new Event(
   "close Order",
   null,
   0,
-  EventType.End,
-  EventStartType.Auto,
+  EVENT_TYPE.END,
+  EVENT_START_TYPE.AUTO,
   2,
   [customer2.print.bind(customer2)],
   "close2"
 );
 start2.next = act3;
-act3.next = end2;
-/* act3.next = instant1;
+/* act3.next = end2; */
+act3.next = instant1;
 act3.throw = supplier;
 act3.throwEvent = start1;
 act2.throw = customer2;
 act2.throwEvent = instant1;
 instant1.next = act4;
-act4.next = end2; */
+act4.next = end2;
 customer2.startEvent = start2;
-customer2.taskList = [start2, act3, end2];
+customer2.taskList = [start2, act3, instant1, act4, end2];
 /////
 
-export var vertices = [supplier, distributor];
-export var CurrentGraph = new Graph();
+export var VERTICES = [supplier, distributor, customer1, customer2];
+export var CURRENT_GRAPH = new Graph();
 // adding vertices
-for (var i = 0; i < vertices.length; i++) {
-  CurrentGraph.addVertex(new Node(i, vertices[i]));
+for (var i = 0; i < VERTICES.length; i++) {
+  CURRENT_GRAPH.addVertex(new Node(i, VERTICES[i]));
 }
 
-CurrentGraph.addEdge(0, 1);
+CURRENT_GRAPH.addEdge(0, 1);
+CURRENT_GRAPH.addEdge(1, 2);
+CURRENT_GRAPH.addEdge(1, 3);
 
 export const curData = {
   currentAgent: null,

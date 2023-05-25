@@ -8,7 +8,7 @@ import {
 } from "@ant-design/icons";
 import { Layout, Menu } from "antd";
 import { useState } from "react";
-import { CurrentGraph, curData } from "../globalVariable";
+import { CURRENT_GRAPH, curData } from "../globalVariable";
 import { useDispatch, useSelector } from "react-redux";
 import { setChosen } from "../features/chosenSlice";
 
@@ -42,7 +42,7 @@ function CustomSider() {
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
-    const newItems = CurrentGraph.AdjList.map((item) => {
+    const newItems = CURRENT_GRAPH.AdjList.map((item) => {
       return {
         label: item.data.name,
         key: item.id,
@@ -53,22 +53,22 @@ function CustomSider() {
   }, []);
 
   const onClickItem = (e) => {
-    for (let i = 0; i < CurrentGraph.getLength(); i++) {
-      if (CurrentGraph.AdjList[i].id == e.key) {
-        console.log(CurrentGraph.AdjList[i].data);
+    for (let i = 0; i < CURRENT_GRAPH.getLength(); i++) {
+      if (CURRENT_GRAPH.AdjList[i].id == e.key) {
+        console.log(CURRENT_GRAPH.AdjList[i].data);
         dispatch(
           setChosen({
-            name: CurrentGraph.AdjList[i].data.name,
-            x: CurrentGraph.AdjList[i].data.location.x,
-            y: CurrentGraph.AdjList[i].data.location.y,
-            inventory: CurrentGraph.AdjList[i].data.inventory,
+            name: CURRENT_GRAPH.AdjList[i].data.name,
+            x: CURRENT_GRAPH.AdjList[i].data.location.x,
+            y: CURRENT_GRAPH.AdjList[i].data.location.y,
+            inventory: CURRENT_GRAPH.AdjList[i].data.inventory,
             /* processes: CurrentGraph.AdjList[i].data.processes, */
             processes: [],
-            type: CurrentGraph.AdjList[i].data.type,
-            id: CurrentGraph.AdjList[i].data.id,
+            type: CURRENT_GRAPH.AdjList[i].data.type,
+            id: CURRENT_GRAPH.AdjList[i].data.id,
           })
         );
-        curData.currentAgent = CurrentGraph.AdjList[i].data;
+        curData.currentAgent = CURRENT_GRAPH.AdjList[i].data;
         console.log(curData.currentAgent);
         return;
       }

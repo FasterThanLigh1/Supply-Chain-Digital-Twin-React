@@ -12,7 +12,7 @@ import {
   Modal,
 } from "antd";
 import { useState } from "react";
-import { CurrentGraph, curData } from "../globalVariable";
+import { CURRENT_GRAPH, curData } from "../globalVariable";
 import { useDispatch, useSelector } from "react-redux";
 import {
   setChosen,
@@ -68,31 +68,35 @@ function Inspector() {
 
   const showModal = (id) => {
     console.log(id);
-    for (let i = 0; i < CurrentGraph.AdjList.length; i++) {
-      if (thisId == CurrentGraph.AdjList[i].data.id) {
-        for (let j = 0; j < CurrentGraph.AdjList[i].data.taskList.length; j++) {
-          if (CurrentGraph.AdjList[i].data.taskList[j].id == id) {
-            setName(CurrentGraph.AdjList[i].data.taskList[j].name);
-            curData.currentTask = CurrentGraph.AdjList[i].data.taskList[j];
-            console.log(CurrentGraph.AdjList[i].data.taskList[j]);
-            if (CurrentGraph.AdjList[i].data.taskList[j] instanceof Event) {
+    for (let i = 0; i < CURRENT_GRAPH.AdjList.length; i++) {
+      if (thisId == CURRENT_GRAPH.AdjList[i].data.id) {
+        for (
+          let j = 0;
+          j < CURRENT_GRAPH.AdjList[i].data.taskList.length;
+          j++
+        ) {
+          if (CURRENT_GRAPH.AdjList[i].data.taskList[j].id == id) {
+            setName(CURRENT_GRAPH.AdjList[i].data.taskList[j].name);
+            curData.currentTask = CURRENT_GRAPH.AdjList[i].data.taskList[j];
+            console.log(CURRENT_GRAPH.AdjList[i].data.taskList[j]);
+            if (CURRENT_GRAPH.AdjList[i].data.taskList[j] instanceof Event) {
               console.log("Event");
               setOpenEvent(true);
               setDuration(0);
-              setType(CurrentGraph.AdjList[i].data.taskList[j].type);
-              setStartType(CurrentGraph.AdjList[i].data.taskList[j].startType);
-              setStartTime(CurrentGraph.AdjList[i].data.taskList[j].startTime);
+              setType(CURRENT_GRAPH.AdjList[i].data.taskList[j].type);
+              setStartType(CURRENT_GRAPH.AdjList[i].data.taskList[j].startType);
+              setStartTime(CURRENT_GRAPH.AdjList[i].data.taskList[j].startTime);
             } else if (
-              CurrentGraph.AdjList[i].data.taskList[j] instanceof Gateway
+              CURRENT_GRAPH.AdjList[i].data.taskList[j] instanceof Gateway
             ) {
               console.log("Gateway");
               setOpenGateway(true);
-              setType(CurrentGraph.AdjList[i].data.taskList[j].type);
+              setType(CURRENT_GRAPH.AdjList[i].data.taskList[j].type);
             } else if (
-              CurrentGraph.AdjList[i].data.taskList[j] instanceof Activity
+              CURRENT_GRAPH.AdjList[i].data.taskList[j] instanceof Activity
             ) {
               console.log("Activity");
-              setDuration(CurrentGraph.AdjList[i].data.taskList[j].duration);
+              setDuration(CURRENT_GRAPH.AdjList[i].data.taskList[j].duration);
               setOpenActivity(true);
             } else {
               console.log("def");
@@ -104,10 +108,10 @@ function Inspector() {
   };
 
   useEffect(() => {
-    for (let i = 0; i < CurrentGraph.AdjList.length; i++) {
-      if (thisId == CurrentGraph.AdjList[i].data.id) {
-        console.log(CurrentGraph.AdjList[i].data.taskList);
-        const newListItem = CurrentGraph.AdjList[i].data.taskList.map(
+    for (let i = 0; i < CURRENT_GRAPH.AdjList.length; i++) {
+      if (thisId == CURRENT_GRAPH.AdjList[i].data.id) {
+        console.log(CURRENT_GRAPH.AdjList[i].data.taskList);
+        const newListItem = CURRENT_GRAPH.AdjList[i].data.taskList.map(
           (task) => {
             return {
               title: task.name,
