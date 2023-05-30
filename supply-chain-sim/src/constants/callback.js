@@ -1,13 +1,21 @@
 import * as turf from "@turf/turf";
 import carImage from "../../public/Image/truck.png";
+import { notification } from "antd";
+import { Agent, Node } from "./class";
 import mapboxgl from "mapbox-gl"; // eslint-disable-line import/no-webpack-loader-syntax
-import { Map } from "../globalVariable";
+import {
+  CURRENT_MAP,
+  CURRENT_PARTICIPANTS_DATA,
+  CURRENT_GRAPH,
+  VERTICES,
+} from "../globalVariable";
 import {
   RUN_STATE,
   AGENT_TYPE,
   EVENT_START_TYPE,
   EVENT_TYPE,
   GATEWAY_TYPE,
+  MESSAGE_TYPE,
 } from ".";
 
 export const execute = (obj, curTime) => {
@@ -97,7 +105,7 @@ export const execute = (obj, curTime) => {
 };
 
 export const runShipment = (step, id, obj, vehicle, onFinishCallBack) => {
-  if (Map.current.getLayer(id)) return;
+  if (CURRENT_MAP.current.getLayer(id)) return;
 
   /* dispatch(setState(true)); */
   console.log("Step: ", step);
@@ -109,20 +117,20 @@ export const runShipment = (step, id, obj, vehicle, onFinishCallBack) => {
   var rep = 0;
   var numSteps = iPathLength; //Change this to set animation resolution
   var timePerStep = 1000; //Change this to alter animation speed
-  Map.current.addSource(id, {
+  CURRENT_MAP.current.addSource(id, {
     type: "geojson",
     data: iPoint,
     maxzoom: 20,
   });
-  Map.current.loadImage(carImage, (error, image) => {
+  CURRENT_MAP.current.loadImage(carImage, (error, image) => {
     if (error) throw error;
     var popup = new mapboxgl.Popup()
       .setHTML(`<strong>Test<strong></p>`)
-      .addTo(Map.current);
+      .addTo(CURRENT_MAP.current);
 
     // Add the image to the Map.current style.
-    Map.current.addImage("cat" + id, image);
-    Map.current.addLayer({
+    CURRENT_MAP.current.addImage("cat" + id, image);
+    CURRENT_MAP.current.addLayer({
       id: id,
       type: "symbol",
       source: id,
@@ -135,15 +143,15 @@ export const runShipment = (step, id, obj, vehicle, onFinishCallBack) => {
           }, */,
     });
   });
-  var pSource = Map.current.getSource(id);
+  var pSource = CURRENT_MAP.current.getSource(id);
   var interval = setInterval(function () {
     rep += 50;
     if (rep > numSteps) {
-      if (Map.current.hasImage("cat" + id)) {
+      if (CURRENT_MAP.current.hasImage("cat" + id)) {
         console.log("[End shipment]");
-        Map.current.removeImage("cat" + id);
-        Map.current.removeLayer(id);
-        Map.current.removeSource(id);
+        CURRENT_MAP.current.removeImage("cat" + id);
+        CURRENT_MAP.current.removeLayer(id);
+        CURRENT_MAP.current.removeSource(id);
         for (let i = 0; i < onFinishCallBack.length; i++) {
           onFinishCallBack[i]();
         }
@@ -158,3 +166,103 @@ export const runShipment = (step, id, obj, vehicle, onFinishCallBack) => {
     }
   }, timePerStep);
 };
+
+export const openNotificationWithIcon = (message, description, type) => {
+  notification[type]({
+    message: message,
+    description: description,
+    duration: 3,
+  });
+};
+
+export const constructVertices = (name, id, vertices) => {
+  console.log(name, id);
+  const newAgent = new Agent(name, 37, -98, [], null, AGENT_TYPE.SUPPLIER, id);
+  vertices.push(newAgent);
+  return newAgent;
+};
+
+export const constructGraph = (vertices) => {
+  //Add vertices
+  for (var i = 0; i < vertices.length; i++) {
+    CURRENT_GRAPH.addVertex(new Node(i, vertices[i]));
+
+    //Add references
+    for (let k = 0; k < vertices[i].taskList.length; k++) {
+      console.log(vertices[i]);
+      if (vertices[i].taskList[k].throwId != null) {
+        for (
+          let j = 0;
+          j < CURRENT_PARTICIPANTS_DATA.referenceEvents.length;
+          j++
+        ) {
+          if (
+            CURRENT_PARTICIPANTS_DATA.referenceEvents[j].event.id ==
+            vertices[i].taskList[k].throwId
+          ) {
+            console.log("Yes: ", CURRENT_PARTICIPANTS_DATA.referenceEvents[j]);
+            vertices[i].taskList[k].throw =
+              CURRENT_PARTICIPANTS_DATA.referenceEvents[j].agent;
+            vertices[i].taskList[k].throwEvent =
+              CURRENT_PARTICIPANTS_DATA.referenceEvents[j].event;
+          }
+        }
+      }
+    }
+  }
+  //Add initial path
+  for (var i = 0; i < vertices.length - 1; i++) {
+    CURRENT_GRAPH.addEdge(i, i + 1);
+  }
+};
+
+export const getEventStartType = (eventString) => {
+  const eventStringLowerCase = eventString.toLowerCase();
+  if (eventStringLowerCase == "loop") {
+    return EVENT_START_TYPE.LOOP;
+  } else if (eventStringLowerCase == "message") {
+    return EVENT_START_TYPE.MESSAGE;
+  } else if (eventStringLowerCase == "timer") {
+    return EVENT_START_TYPE.TIMER;
+  }
+  return EVENT_START_TYPE.AUTO;
+};
+
+export const RESET_SIMULATION = () => {
+  openNotificationWithIcon("RESET", "Reset simulation", MESSAGE_TYPE.WARNING);
+  //CLEAR ARRAY
+  CURRENT_PARTICIPANTS_DATA.participants.length = 0;
+  CURRENT_PARTICIPANTS_DATA.referenceEvents.length = 0;
+};
+
+export const RESET_IMPORT = () => {
+  VERTICES.length = 0;
+  console.log("clear");
+  console.log(VERTICES);
+};
+
+export const print = (obj) => {
+  //console.log(obj.name);
+  console.log("print: ", obj.name);
+  obj.runState = RUN_STATE.CAN_RUN;
+};
+
+export const printWhole = (obj) => {
+  console.log("printWhole: ", obj.name);
+  obj.runState = RUN_STATE.CAN_RUN;
+};
+
+export const move = (obj) => {
+    console.log(obj);
+    for (let i = 0; i < obj.transport.length; i++) {
+      obj.transport[i].move();
+    }
+    const id = "peep" + obj.name;
+    runShipment(obj.route, id, obj, obj.transport[0], [
+      () => {
+        console.log("Finish shipment");
+        obj.unload(obj);
+      },
+    ]);
+    console.log(obj.transport);
+  }

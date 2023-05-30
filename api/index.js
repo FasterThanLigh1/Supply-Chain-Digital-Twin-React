@@ -52,21 +52,11 @@ db.connect((err) => {
 });
 
 app.post("/new_simulation", (req, res) => {
-  const curDate = dayjs();
-  const simId =
-    "simulation_" +
-    curDate.date().toString() +
-    "_" +
-    curDate.month().toString() +
-    "_" +
-    curDate.year().toString() +
-    "_" +
-    curDate.hour().toString() +
-    "" +
-    curDate.minute().toString() +
-    "" +
-    curDate.second().toString();
-  const sqlCreate = `insert into Simulation (SimulationKey,Date) values ('${simId}', CURDATE());`;
+  let data = req.body;
+  console.log(data);
+  //let dataJson = JSON.parse(data.id);
+  console.log(data.id);
+  const sqlCreate = `insert into Simulation (SimulationKey,Date) values ('${data.id}', CURDATE());`;
   db.query(sqlCreate, (err, result) => {
     if (err) throw err;
     res.send(result);
@@ -74,7 +64,20 @@ app.post("/new_simulation", (req, res) => {
 });
 
 app.post("/new_participants", (req, res) => {
-  const curDate = dayjs();
+  let data = req.body;
+  console.log(data);
+  const simId = data.simId;
+  const participants = data.participants;
+  console.log(participants);
+  const values = participants
+    .map((p) => `('${p.id}', '${simId}','${p.name}')`)
+    .join(",");
+  const sqlCreate = `insert into Participants (ParticipantKey, SimulationKey, Name) values ${values};`;
+  db.query(sqlCreate, (err, result) => {
+    if (err) throw err;
+    res.send(result);
+  });
+  /* const curDate = dayjs();
   const simId =
     "simulation_" +
     curDate.date().toString() +
@@ -95,11 +98,25 @@ app.post("/new_participants", (req, res) => {
   db.query(sqlCreate, (err, result) => {
     if (err) throw err;
     res.send(result);
-  });
+  }); */
 });
 
 app.post("/insert_statistic", (req, res) => {
-  const curDate = dayjs();
+  const body = req.body;
+  console.log(body);
+  /* const values = body
+    .map(
+      (p) =>
+        `('${p.participantKey}', '${p.simulationKey}','${p.data.totalInventory}', '${p.data.otalBackorder}', CURDATE())`
+    )
+    .join(","); */
+  const values = `('${body.participantKey}', '${body.simulationKey}','${body.data.totalInventory}', '${body.data.otalBackorder}', STR_TO_DATE('${body.date}','%Y-%m-%dT%T.%fZ'))`;
+  const sqlCreate = `insert into Statistic (ParticipantKey, SimulationKey, TotalInventory, TotalBackorder, Date) values ${values};`;
+  db.query(sqlCreate, (err, result) => {
+    if (err) throw err;
+    res.send(result);
+  });
+  /* const curDate = dayjs();
   const simId =
     "simulation_" +
     curDate.date().toString() +
@@ -123,11 +140,22 @@ app.post("/insert_statistic", (req, res) => {
   db.query(sqlCreate, (err, result) => {
     if (err) throw err;
     res.send(result);
-  });
+  }); */
 });
 
 app.get("/get_simulation_list", (req, res) => {
   const sqlGet = "select UniqueKey from simulation;";
+  db.query(sqlGet, (err, result) => {
+    if (err) throw err;
+    res.send(result);
+  });
+});
+
+app.get("/get_participants/:id", (req, res) => {
+  const id = req.params.id;
+  const sqlGet = `select participants.ParticipantKey, participants.Name, participants.SimulationKey
+from participants inner join simulation on participants.SimulationKey = simulation.SimulationKey
+where simulation.SimulationKey = '${id}'`;
   db.query(sqlGet, (err, result) => {
     if (err) throw err;
     res.send(result);
@@ -147,7 +175,7 @@ statistic.ParticipantKey = participants.ParticipantKey where participants.Simula
     if (err) throw err;
     res.send(result);
   });
-  
+
   //res.send(`<h1>${req.params.id}</h1>`);
 });
 

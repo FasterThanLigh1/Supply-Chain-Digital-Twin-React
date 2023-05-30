@@ -38,12 +38,12 @@ class Graph {
   }
 }
 class Agent {
-  constructor(name, x, y, inventory, startEvent, type, id) {
+  constructor(name, latitude, longitude, inventory, startEvent, type, id) {
     ////console.log("[CONSTRUCTOR CALLED");
     this.name = name;
     this.location = {
-      x: x,
-      y: y,
+      latitude: latitude,
+      longitude: longitude,
     };
     this.inventory = inventory;
     this.startEvent = startEvent;
@@ -118,8 +118,6 @@ class Agent {
     return true;
   }
   load(obj) {
-    console.log(this.name);
-    console.log(this.inventory);
     for (let i = 0; i < obj.customerDemand.length; i++) {
       console.log(obj.customerDemand);
       obj.customerDemand[i].transport.loadBulk(obj.customerDemand[i].demand);
@@ -155,14 +153,14 @@ class Agent {
     for (let i = 0; i < obj.transport.length; i++) {
       obj.transport[i].move();
     }
-    const id = "peep" + this.name;
-    runShipment(obj.route, id, obj, this.transport[0], [
+    const id = "peep" + obj.name;
+    runShipment(obj.route, id, obj, obj.transport[0], [
       () => {
         console.log("Finish shipment");
-        this.unload(obj);
+        obj.unload(obj);
       },
     ]);
-    console.log(this.transport);
+    console.log(obj.transport);
   }
   print(obj) {
     //console.log(obj.name);
@@ -181,8 +179,8 @@ class Agent {
     for (let i = 0; i < obj.inventory.length; i++) {
       res += obj.inventory[i].quantity;
     }
-    this.totalInventory = res;
-    console.log("Calc: ", this.totalInventory);
+    this.data.totalInventory = res;
+    console.log("Calc: ", this.data.totalInventory);
   }
   calcBackOrder(obj) {
     if (obj.backOrder.length == 0) {
@@ -193,8 +191,8 @@ class Agent {
     for (let i = 0; i < obj.backOrder.length; i++) {
       res += obj.backOrder[i].quantity;
     }
-    this.totalBackOrder = res;
-    console.log("Calc: ", this.totalBackOrder);
+    this.data.totalBackOrder = res;
+    console.log("Calc: ", this.data.totalBackOrder);
   }
   calcEverything(obj) {
     this.calcTotalInventory(obj);
@@ -213,6 +211,7 @@ class BpmnNode {
     this.actionCallback = [];
     this.deliveryOnCallback = [];
     this.hasRun = false;
+    this.throwId = null;
   }
   run(obj) {
     console.log(obj.name + " | " + this.name);
@@ -224,9 +223,12 @@ class BpmnNode {
     } else {
       this.hasRun = true;
     }
-    if (this.actionCallback != null) {
+    if (this.actionCallback.length < 1) {
+      //No action: default case:
+      obj.runState = RUN_STATE.CAN_RUN;
+    } else {
       for (let i = 0; i < this.actionCallback.length; i++) {
-        this.actionCallback[i](obj);
+        this.actionCallback[i].callback(obj);
       }
     }
   }
@@ -269,7 +271,8 @@ class Activity extends BpmnNode {
 }
 
 class Transportation {
-  constructor(type, src, des, capacity, cargo) {
+  constructor(name, type, src, des, capacity, cargo) {
+    this.name = name;
     this.type = type;
     this.src = src;
     this.des = des;

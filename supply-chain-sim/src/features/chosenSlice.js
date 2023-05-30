@@ -3,10 +3,10 @@ import { createSlice } from "@reduxjs/toolkit";
 const initialState = {
   name: "default",
   id: "default",
-  x: 0,
-  y: 0,
+  longitude: 0,
+  latitude: 0,
   inventory: [],
-  processes: [],
+  demand: [],
   type: "default",
 };
 
@@ -17,29 +17,42 @@ export const chosenSlice = createSlice({
     setChosen: (state, action) => {
       console.log("chosen: ", action.payload);
       state.name = action.payload.name;
-      state.x = action.payload.x;
-      state.y = action.payload.y;
+      state.longitude = action.payload.longitude;
+      state.latitude = action.payload.latitude;
       state.inventory = action.payload.inventory;
-      state.processes = action.payload.processes;
+      state.demand = action.payload.demand;
       state.type = action.payload.type;
       state.id = action.payload.id;
     },
-    setX: (state, action) => {
-      state.x = action.payload;
+    setLongitude: (state, action) => {
+      state.longitude = action.payload;
     },
-    setY: (state, action) => {
-      state.y = action.payload;
+    setLatitude: (state, action) => {
+      state.latitude = action.payload;
+    },
+    setDemandSlice: (state, action) => {
+      state.demand = action.payload;
+    },
+    setInventorySlice: (state, action) => {
+      state.inventory = action.payload;
+      console.log(action.payload);
     },
   },
 });
 
 // Action creators are generated for each case reducer function
-export const { setChosen, setX, setY } = chosenSlice.actions;
+export const {
+  setChosen,
+  setLongitude,
+  setLatitude,
+  setInventorySlice,
+  setDemandSlice,
+} = chosenSlice.actions;
 export const selectName = (state) => state.chosen.name;
-export const selectX = (state) => state.chosen.x;
-export const selectY = (state) => state.chosen.y;
+export const selectLongitude = (state) => state.chosen.longitude;
+export const selectLatitude = (state) => state.chosen.latitude;
 export const selectInventory = (state) => state.chosen.inventory;
-export const selectProcesses = (state) => state.chosen.processes;
+export const selectDemand = (state) => state.chosen.demand;
 export const selectType = (state) => state.chosen.type;
 export const selectId = (state) => state.chosen.id;
 

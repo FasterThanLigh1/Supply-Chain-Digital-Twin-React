@@ -2,26 +2,28 @@ import React from "react";
 import { useEffect, useRef, useState } from "react";
 import { Button, Typography, Modal, DatePicker, Space } from "antd";
 import mapboxgl from "mapbox-gl"; // eslint-disable-line import/no-webpack-loader-syntax
-import { AGENT_TYPE, mapaboxAcessToken } from "../constants";
+import { AGENT_TYPE, MESSAGE_TYPE, mapaboxAcessToken } from "../constants";
+import {
+  CURRENT_PARTICIPANTS_DATA,
+  CURRENT_SIMULATION_DATA,
+} from "../globalVariable";
 import * as turf from "@turf/turf";
 import carImage from "../../public/Image/truck.png";
 import { ACTIVE_MARKERS, ACTIVE_ROUTE } from "../constants";
 import { useDispatch, useSelector } from "react-redux";
 import { setState, selectState } from "../features/stateSlice";
-import { selectAdjList } from "../features/graphSlice";
 import { UseInterval } from "../ultils/CustomHooks";
 import dayjs from "dayjs";
-import { execute } from "../constants/callback";
 import {
-  CURRENT_GRAPH,
-  supplier,
-  distributor,
-  customer2,
-} from "../globalVariable";
-import { Map } from "../globalVariable";
+  RESET_SIMULATION,
+  execute,
+  openNotificationWithIcon,
+} from "../constants/callback";
+import { CURRENT_GRAPH, supplier, customer2 } from "../globalVariable";
+import { CURRENT_MAP } from "../globalVariable";
 import { setCurrentDate, selectCurrentDate } from "../features/dateSlice";
 import Axios from "axios";
-import { update } from "lodash";
+import QueryString from "qs";
 
 mapboxgl.accessToken = mapaboxAcessToken;
 const { RangePicker } = DatePicker;
@@ -118,7 +120,7 @@ function Mapbox({ graph }) {
     map.current.on("click", (event) => {
       //console.log("click");
     });
-    Map.current = map.current;
+    CURRENT_MAP.current = map.current;
   });
 
   useEffect(() => {
@@ -192,7 +194,12 @@ function Mapbox({ graph }) {
   };
 
   const endSim = () => {
-    //console.log("end sim called");
+    //END SIMULATION
+    openNotificationWithIcon(
+      "End Simulation",
+      "The simulation has ended successfully",
+      MESSAGE_TYPE.SUCCESS
+    );
   };
 
   const [isRun, setIsRun] = useState(null);
@@ -226,13 +233,30 @@ function Mapbox({ graph }) {
 
     setCurDate((prev) => prev.add(1, "hour"));
     if (curDate.hour() == 0) {
-      updateDatabase(supplier);
-      updateDatabase(customer2);
+      endDateUpdate();
     }
   };
 
-  const updateDatabase = (obj) => {
+  const endDateUpdate = () => {
+    for (let i = 0; i < CURRENT_GRAPH.AdjList.length; i++) {
+      //console.log(CurrentGraph.AdjList);
+      CURRENT_GRAPH.AdjList[i].data.calcEverything(
+        CURRENT_GRAPH.AdjList[i].data
+      );
+      updateStatistic(CURRENT_GRAPH.AdjList[i].data);
+    }
+  };
+
+  const updateStatistic = (obj) => {
     console.log("A new day");
+    Axios.post("http://localhost:8080/insert_statistic", {
+      participantKey: obj.id,
+      simulationKey: CURRENT_SIMULATION_DATA.currentSimulationId,
+      data: obj.data,
+      date: curDate,
+    }).then(() => {
+      ////console.log("success");
+    });
   };
 
   const onClickSimulate = () => {
@@ -245,8 +269,8 @@ function Mapbox({ graph }) {
         //console.log(graph.AdjList[i].data.name);
         if (graph.AdjList[i].data.name == ACTIVE_MARKERS[j].id) {
           ACTIVE_MARKERS[j].marker.setLngLat([
-            graph.AdjList[i].data.location.x,
-            graph.AdjList[i].data.location.y,
+            graph.AdjList[i].data.location.longitude,
+            graph.AdjList[i].data.location.latitude,
           ]);
           break;
         }
@@ -256,12 +280,12 @@ function Mapbox({ graph }) {
           const id = "route_" + j.toString() + "_" + i.toString();
           getRoute(
             [
-              graph.AdjList[i].data.location.x,
-              graph.AdjList[i].data.location.y,
+              graph.AdjList[i].data.location.longitude,
+              graph.AdjList[i].data.location.latitude,
             ],
             [
-              graph.AdjList[i].adjacent[j].data.location.x,
-              graph.AdjList[i].adjacent[j].data.location.y,
+              graph.AdjList[i].adjacent[j].data.location.longitude,
+              graph.AdjList[i].adjacent[j].data.location.latitude,
             ],
             id
           );
@@ -289,12 +313,12 @@ function Mapbox({ graph }) {
 
     var popup = new mapboxgl.Popup()
       .setHTML(
-        `<strong>${agent.name}</strong><p>Latitude: ${agent.location.x} Longtitude: ${agent.location.y}</p>`
+        `<strong>${agent.name}</strong><p>Longitude: ${agent.location.longitude} Latitude: ${agent.location.latitude}</p>`
       )
       .addTo(map.current);
 
     const temp = new mapboxgl.Marker(el)
-      .setLngLat([agent.location.x, agent.location.y])
+      .setLngLat([agent.location.longitude, agent.location.latitude])
       .addTo(map.current)
       .setPopup(popup);
     ACTIVE_MARKERS.push({
@@ -305,8 +329,60 @@ function Mapbox({ graph }) {
 
   const run = () => {
     if (isRun != null) {
+      openNotificationWithIcon(
+        "Pause Simulation",
+        "The simulation is paused",
+        MESSAGE_TYPE.WARNING
+      );
       setIsRun(null);
     } else {
+      //NEW SIMULATION AND RESET
+      RESET_SIMULATION();
+
+      //NEW SIM ID
+      const curDate = dayjs();
+      const resHour = curDate.hour() + 1;
+      const simId =
+        "simulation_" +
+        curDate.date().toString() +
+        "_" +
+        curDate.month().toString() +
+        "_" +
+        curDate.year().toString() +
+        "_" +
+        resHour.toString() +
+        "-" +
+        curDate.minute().toString() +
+        "-" +
+        curDate.second().toString();
+      //SET SIMULATION ID
+      CURRENT_SIMULATION_DATA.currentSimulationId = simId;
+      // TODO: INSERT SIMULATION
+      Axios.post("http://localhost:8080/new_simulation", {
+        id: simId,
+      }).then(() => {
+        ////console.log("success");
+      });
+
+      //TODO: INSERT PARTICIPANTS
+      for (let i = 0; i < CURRENT_GRAPH.AdjList.length; i++) {
+        CURRENT_PARTICIPANTS_DATA.participants.push({
+          name: CURRENT_GRAPH.AdjList[i].data.name,
+          id: CURRENT_GRAPH.AdjList[i].data.id,
+        });
+      }
+      Axios.post("http://localhost:8080/new_participants", {
+        participants: CURRENT_PARTICIPANTS_DATA.participants,
+        simId: simId,
+      }).then(() => {
+        ////console.log("success");
+      });
+
+      openNotificationWithIcon(
+        "Start Simulation",
+        "The simulation is starting",
+        MESSAGE_TYPE.SUCCESS
+      );
       setIsRun(1000);
     }
     if (state === true) {
@@ -392,11 +468,15 @@ function Mapbox({ graph }) {
       >
         Next
       </Button>
-      <Typography>
-        Lat: {lat} | Lng: {lng} | Zoom: {zoom}
-      </Typography>
-      <Typography>{curDate.toString()}</Typography>
-      <div ref={mapContainer} className="map-container" />
+      <div ref={mapContainer} className="map-container">
+        <Space direction="vertical" className="absolute z-50 w-69 left-0">
+          <Typography className="bg-sky-950 pt-2 pb-2 pl-2 pr-2 rounded-lg text-white">
+            Lat: {lat} | Lng: {lng} | Zoom: {zoom}
+          </Typography>
+          <Typography>{curDate.toString()}</Typography>
+        </Space>
+      </div>
+
       <Modal
         title="Basic Modal"
         open={isModalOpen}

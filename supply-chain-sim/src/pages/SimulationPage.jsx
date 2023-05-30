@@ -32,6 +32,7 @@ import Inspector from "../components/inspector";
 import BpmnFooter from "../components/bpmnFooter";
 import Axios from "axios";
 import { MAIN_COLOR } from "../constants";
+import InventoryPanel from "../components/inventory";
 
 const items2 = [UserOutlined, LaptopOutlined, NotificationOutlined].map(
   (icon, index) => {
@@ -143,27 +144,14 @@ function SimulationPage() {
           />
           <Layout
             style={{
-              padding: "24px 0",
+              padding: "24px 0 24px",
+              borderWidth: "1px",
+              borderStyle: "solid",
+              borderColor: "blue",
               background: colorBgContainer,
             }}
           >
             <CustomSider colorBgContainer={colorBgContainer} />
-            {/* <Sider
-              style={{
-                background: colorBgContainer,
-              }}
-              width={200}
-            >
-              <Menu
-                mode="inline"
-                defaultSelectedKeys={["1"]}
-                defaultOpenKeys={["sub1"]}
-                style={{
-                  height: "100%",
-                }}
-                items={items2}
-              />
-            </Sider> */}
             <Content
               style={{
                 padding: "0 24px",
@@ -175,7 +163,10 @@ function SimulationPage() {
           </Layout>
           <Layout
             style={{
-              padding: "24px 0",
+              padding: "24px 0 24px",
+              borderWidth: "1px",
+              borderStyle: "solid",
+              borderColor: "blue",
               background: colorBgContainer,
             }}
           >
@@ -195,6 +186,7 @@ function SimulationPage() {
               }}
             >
               <BpmnFooter />
+              <InventoryPanel />
             </Content>
           </Layout>
         </Content>

@@ -10,18 +10,10 @@ import "bpmn-js/dist/assets/bpmn-font/css/bpmn-embedded.css";
 import axios from "axios";
 import { Button, Upload, message } from "antd";
 import "bpmn-js/dist/assets/diagram-js.css";
-
-const defaultColor = {
-  stroke: "black",
-  fill: "white",
-};
-
-const yellow = {
-  stroke: "black",
-  fill: "green",
-};
-
-const fill = [];
+import { CURRENT_BPMN_MODEl } from "../constants";
+import {
+  CURRENT_PARTICIPANTS_DATA,
+} from "../globalVariable";
 
 function BpmnFooter(url) {
   const [diagram, diagramSet] = useState("");
@@ -29,17 +21,25 @@ function BpmnFooter(url) {
   const container = document.getElementById("container");
 
   useEffect(() => {
+    console.log(CURRENT_PARTICIPANTS_DATA.referenceParticipants);
+  }, []);
+
+  useEffect(() => {
     if (diagram.length === 0) {
-      axios
-        .get(
-          "https://cdn.staticaly.com/gh/bpmn-io/bpmn-js-examples/master/colors/resources/pizza-collaboration.bpmn"
-        )
-        .then((r) => {
-          diagramSet(r.data);
-        })
-        .catch((e) => {
-          console.log(e);
-        });
+      if (CURRENT_BPMN_MODEl.diagram != null) {
+        diagramSet(CURRENT_BPMN_MODEl.diagram);
+      } else {
+        axios
+          .get(
+            "https://cdn.staticaly.com/gh/bpmn-io/bpmn-js-examples/master/colors/resources/pizza-collaboration.bpmn"
+          )
+          .then((r) => {
+            diagramSet(r.data);
+          })
+          .catch((e) => {
+            console.log(e);
+          });
+      }
     }
     if (diagram.length > 0) {
       if (currentModeler == null) {
@@ -69,12 +69,9 @@ function BpmnFooter(url) {
               if (elem.type === "bpmn:StartEvent") {
                 // do something with the task
                 const businessObject = elem.businessObject;
-
-                /* elem.di.set("stroke", yellow.stroke);
-                elem.di.set("fill", yellow.fill); */
-                /* elem.di.fill = yellow.fill; */
-                console.log("Start", elem);
                 canvas.addMarker(elem.id, "highlight");
+                console.log("Start", elem);
+                //canvas.addMarker(elem.id, "highlight");
               }
             });
           }
@@ -86,14 +83,6 @@ function BpmnFooter(url) {
           if (err) {
           } else {
             console.log("[modeler", currentModeler);
-            var elementRegistry = currentModeler.get("elementRegistry");
-            console.log(elementRegistry);
-            //simulationSupport.triggerElement("Event_1sysx7h_di");
-            elementRegistry.forEach(function (elem, gfx) {
-              if (elem.type === "bpmn:Task") {
-                fill.push(elem);
-              }
-            });
           }
         });
       }

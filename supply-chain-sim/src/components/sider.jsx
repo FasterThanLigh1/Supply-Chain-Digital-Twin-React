@@ -8,7 +8,7 @@ import {
 } from "@ant-design/icons";
 import { Layout, Menu } from "antd";
 import { useState } from "react";
-import { CURRENT_GRAPH, curData } from "../globalVariable";
+import { CURRENT_GRAPH, CURRENT_SIMULATION_DATA } from "../globalVariable";
 import { useDispatch, useSelector } from "react-redux";
 import { setChosen } from "../features/chosenSlice";
 
@@ -59,17 +59,16 @@ function CustomSider(colorBgContainer) {
         dispatch(
           setChosen({
             name: CURRENT_GRAPH.AdjList[i].data.name,
-            x: CURRENT_GRAPH.AdjList[i].data.location.x,
-            y: CURRENT_GRAPH.AdjList[i].data.location.y,
+            longitude: CURRENT_GRAPH.AdjList[i].data.location.longitude,
+            latitude: CURRENT_GRAPH.AdjList[i].data.location.latitude,
             inventory: CURRENT_GRAPH.AdjList[i].data.inventory,
-            /* processes: CurrentGraph.AdjList[i].data.processes, */
-            processes: [],
+            demand: CURRENT_GRAPH.AdjList[i].data.demand,
             type: CURRENT_GRAPH.AdjList[i].data.type,
             id: CURRENT_GRAPH.AdjList[i].data.id,
           })
         );
-        curData.currentAgent = CURRENT_GRAPH.AdjList[i].data;
-        console.log(curData.currentAgent);
+        CURRENT_SIMULATION_DATA.currentAgent = CURRENT_GRAPH.AdjList[i].data;
+        console.log(CURRENT_SIMULATION_DATA.currentAgent);
         return;
       }
     }
@@ -81,6 +80,7 @@ function CustomSider(colorBgContainer) {
         background: colorBgContainer,
       }}
       width={200}
+      height={300}
     >
       <div
         style={{
