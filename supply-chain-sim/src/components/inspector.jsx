@@ -108,6 +108,10 @@ function Inspector() {
       values.transportation[0].capacity,
       []
     );
+    CURRENT_SIMULATION_DATA.currentAgent.customerDemand.push({
+      demand: tempDest.demand,
+      transport: transportation,
+    });
     CURRENT_SIMULATION_DATA.currentAgent.transport.push(transportation);
     console.log("After update: ", CURRENT_SIMULATION_DATA.currentAgent);
   };

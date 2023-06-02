@@ -274,8 +274,7 @@ function BpmnModeler(url) {
         type="primary"
         onClick={OnClick}
         style={{
-          background: "red",
-          borderColor: "yellow",
+          background: "#15438c",
         }}
       >
         Download
@@ -296,23 +295,10 @@ function BpmnModeler(url) {
           return false;
         }}
       >
-        <Button
-          style={{ background: "red", borderColor: "yellow" }}
-          type="primary"
-        >
+        <Button style={{ background: "#15438c" }} type="primary">
           Import
         </Button>
       </Upload>
-      <Button
-        onClick={() => {
-          console.log(fill);
-          for (let i = 0; i < fill.length; i++) {
-            modeling.setColor(fill[i], yellow);
-          }
-        }}
-      >
-        Next
-      </Button>
       <div
         id="container"
         style={{

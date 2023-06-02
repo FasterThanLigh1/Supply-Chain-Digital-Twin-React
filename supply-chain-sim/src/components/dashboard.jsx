@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Card,
   Col,
@@ -14,6 +14,7 @@ import {
 } from "antd";
 import EChart from "./eChart";
 import LineChart from "./lineChart";
+import { useScroll } from "framer-motion";
 
 const dollor = [
   <svg
@@ -133,12 +134,126 @@ const count = [
   },
 ];
 
-function Dashboard() {
+function Dashboard({ data }) {
   const { Title, Text } = Typography;
+  const [totalInventory, setTotalInventory] = useState(0);
+  const [totalBackorder, setTotalBackorder] = useState(0);
+  //(beginning inv + end inv) /2
+  const [avgInventory, setAvgInventory] = useState(0);
+  const [cog, setCog] = useState(0);
+  const [itos, setItos] = useState(0);
+  const [turnover, setTurnOver] = useState(0);
+
+  useEffect(() => {
+    console.log("From dashboard", data);
+    calc();
+  }, [data]);
+
+  const calc = () => {
+    if (data.length < 1) return;
+    console.log("calc", data[data.length - 1]);
+    console.log(data[data.length - 1].TotalInventory);
+    setTotalInventory(data[data.length - 1].TotalInventory);
+    setTotalBackorder(data[data.length - 1].TotalBackorder);
+    const avgTemp =
+      (data[0].TotalInventory + data[data.length - 1].TotalInventory) / 2;
+    setAvgInventory(avgTemp);
+  };
+
   return (
     <div className="layout-content">
       <Row className="rowgap-vbox" gutter={[24, 0]}>
-        {count.map((c, index) => (
+        <Col key={0} xs={24} sm={24} md={12} lg={6} xl={6} className="mb-24">
+          <Card bordered={false} className="criclebox ">
+            <div className="number">
+              <Row align="middle" gutter={[24, 0]}>
+                <Col xs={18}>
+                  <span>Total Inventory</span>
+                  <Title level={3}>
+                    {totalInventory}
+                    <small className="bnb2">Unit</small>
+                  </Title>
+                </Col>
+              </Row>
+            </div>
+          </Card>
+        </Col>
+        <Col key={1} xs={24} sm={24} md={12} lg={6} xl={6} className="mb-24">
+          <Card bordered={false} className="criclebox ">
+            <div className="number">
+              <Row align="middle" gutter={[24, 0]}>
+                <Col xs={18}>
+                  <span>Total Backlog</span>
+                  <Title level={3}>
+                    {totalBackorder}
+                    <small className="bnb2">Unit</small>
+                  </Title>
+                </Col>
+              </Row>
+            </div>
+          </Card>
+        </Col>
+        <Col key={2} xs={24} sm={24} md={12} lg={6} xl={6} className="mb-24">
+          <Card bordered={false} className="criclebox ">
+            <div className="number">
+              <Row align="middle" gutter={[24, 0]}>
+                <Col xs={18}>
+                  <span>Average Inventory</span>
+                  <Title level={3}>
+                    {avgInventory}
+                    <small className="bnb2">Unit</small>
+                  </Title>
+                </Col>
+              </Row>
+            </div>
+          </Card>
+        </Col>
+        <Col key={3} xs={24} sm={24} md={12} lg={6} xl={6} className="mb-24">
+          <Card bordered={false} className="criclebox ">
+            <div className="number">
+              <Row align="middle" gutter={[24, 0]}>
+                <Col xs={18}>
+                  <span>Cost of Goods Sold</span>
+                  <Title level={3}>
+                    {cog}
+                    <small className="bnb2">$</small>
+                  </Title>
+                </Col>
+              </Row>
+            </div>
+          </Card>
+        </Col>
+        <Col key={4} xs={24} sm={24} md={12} lg={6} xl={6} className="mb-24">
+          <Card bordered={false} className="criclebox ">
+            <div className="number">
+              <Row align="middle" gutter={[24, 0]}>
+                <Col xs={18}>
+                  <span>Inventory to Sales</span>
+                  <Title level={3}>
+                    {itos}
+                    <small className="bnb2">Unit</small>
+                  </Title>
+                </Col>
+              </Row>
+            </div>
+          </Card>
+        </Col>
+        <Col key={5} xs={24} sm={24} md={12} lg={6} xl={6} className="mb-24">
+          <Card bordered={false} className="criclebox ">
+            <div className="number">
+              <Row align="middle" gutter={[24, 0]}>
+                <Col xs={18}>
+                  <span>Inventory Turnover Rate</span>
+                  <Title level={3}>
+                    {turnover}
+                    <small className="bnb2">Unit</small>
+                  </Title>
+                </Col>
+              </Row>
+            </div>
+          </Card>
+        </Col>
+        {/* {count.map((c, index) => (
           <Col
             key={index}
             xs={24}
@@ -164,17 +279,22 @@ function Dashboard() {
               </div>
             </Card>
           </Col>
-        ))}
+        ))} */}
       </Row>
       <Row gutter={[24, 0]}>
+        {/* <Col xs={24} sm={24} md={12} lg={12} xl={10} className="mb-24">
+          <Card bordered={false} className="criclebox h-full">
+            <LineChart data={[450, 200, 100, 220, 500, 100, 400, 230, 500]} />
+          </Card>
+        </Col> */}
         <Col xs={24} sm={24} md={12} lg={12} xl={10} className="mb-24">
           <Card bordered={false} className="criclebox h-full">
-            <EChart />
+            <LineChart data={data} title="inventory" />
           </Card>
         </Col>
         <Col xs={24} sm={24} md={12} lg={12} xl={14} className="mb-24">
           <Card bordered={false} className="criclebox h-full">
-            <LineChart />
+            <LineChart data={data} title="backOrder" />
           </Card>
         </Col>
       </Row>

@@ -19,7 +19,7 @@ import {
   execute,
   openNotificationWithIcon,
 } from "../constants/callback";
-import { CURRENT_GRAPH, supplier, customer2 } from "../globalVariable";
+import { CURRENT_GRAPH } from "../globalVariable";
 import { CURRENT_MAP } from "../globalVariable";
 import { setCurrentDate, selectCurrentDate } from "../features/dateSlice";
 import Axios from "axios";
@@ -51,7 +51,7 @@ function Mapbox({ graph }) {
 
   const dispatch = useDispatch();
 
-  async function getRoute(start, end, routeId) {
+  async function getRoute(start, end, routeId, origin) {
     // make a directions request using cycling profile
     // an arbitrary start will always be the same
     // only the end or destination will change
@@ -72,7 +72,7 @@ function Mapbox({ graph }) {
         coordinates: route,
       },
     };
-    ACTIVE_ROUTE.push(geojson.geometry);
+    origin.route = geojson.geometry;
     const length = turf.length(geojson.geometry, { units: "kilometers" });
 
     // if the route already exists on the map, we'll reset it using setData
@@ -264,6 +264,7 @@ function Mapbox({ graph }) {
       //console.log("Still running");
       return;
     }
+    ACTIVE_ROUTE.length = 0;
     for (let i = 0; i < graph.getLength(); i++) {
       for (let j = 0; j < ACTIVE_MARKERS.length; j++) {
         //console.log(graph.AdjList[i].data.name);
@@ -287,15 +288,16 @@ function Mapbox({ graph }) {
               graph.AdjList[i].adjacent[j].data.location.longitude,
               graph.AdjList[i].adjacent[j].data.location.latitude,
             ],
-            id
+            id,
+            graph.AdjList[i].data
           );
         }
       }
     }
 
-    for (let i = 0; i < CURRENT_GRAPH.AdjList.length - 1; i++) {
+    /* for (let i = 0; i < CURRENT_GRAPH.AdjList.length - 1; i++) {
       CURRENT_GRAPH.AdjList[i].data.route = ACTIVE_ROUTE[i];
-    }
+    } */
     console.log(CURRENT_GRAPH.AdjList);
   };
 
@@ -360,6 +362,8 @@ function Mapbox({ graph }) {
       // TODO: INSERT SIMULATION
       Axios.post("http://localhost:8080/new_simulation", {
         id: simId,
+        date: curDate,
+        endDate: endDate,
       }).then(() => {
         ////console.log("success");
       });
@@ -420,60 +424,38 @@ function Mapbox({ graph }) {
     dispatch(setCurrentDate(date.toString()));
   };
 
+  const exportData = (data) => {
+    const jsonString = `data:text/json;chatset=utf-8,${encodeURIComponent(
+      JSON.stringify(data)
+    )}`;
+    const link = document.createElement("a");
+    link.href = jsonString;
+    link.download = "data.json";
+
+    link.click();
+  };
+
   return (
     <div>
+      <Button onClick={onClickSimulate}>Add route</Button>
+      <Button onClick={run}>Run</Button>
       <Button
-        style={{ background: "red", borderColor: "yellow" }}
-        onClick={onClickSimulate}
-      >
-        Add route
-      </Button>
-      <Button
-        style={{ background: "red", borderColor: "yellow" }}
-        onClick={run}
-      >
-        Run
-      </Button>
-      <Button
-        style={{ background: "red", borderColor: "yellow" }}
         onClick={() => {
           setIsModalOpen(true);
         }}
       >
         Run Sim
       </Button>
-      <Button
-        style={{ background: "red", borderColor: "yellow" }}
-        onClick={() => {
-          //console.log("test");
-          supplier.load(supplier);
-          customer2.printWhole(customer2);
-          postInventory(supplier.inventory);
-        }}
-      >
-        Ship
-      </Button>
-      <Button
-        style={{ background: "red", borderColor: "yellow" }}
-        onClick={() => {
-          //console.log("test");
-          supplier.unload(supplier);
-        }}
-      >
-        Unload
-      </Button>
-      <Button
-        style={{ background: "red", borderColor: "yellow" }}
-        onClick={simulation}
-      >
-        Next
-      </Button>
+      <Button>Import</Button>
+      <Button onClick={exportData(CURRENT_PARTICIPANTS_DATA)}>Export</Button>
       <div ref={mapContainer} className="map-container">
-        <Space direction="vertical" className="absolute z-50 w-69 left-0">
+        <Space direction="vertical" className="absolute z-40 w-69 left-0">
           <Typography className="bg-sky-950 pt-2 pb-2 pl-2 pr-2 rounded-lg text-white">
             Lat: {lat} | Lng: {lng} | Zoom: {zoom}
           </Typography>
-          <Typography>{curDate.toString()}</Typography>
+          <Typography className="bg-sky-950 pt-2 pb-2 pl-2 pr-2 rounded-lg text-white">
+            {curDate.toString()}
+          </Typography>
         </Space>
       </div>
 

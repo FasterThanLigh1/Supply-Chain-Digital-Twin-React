@@ -2028,6 +2028,7 @@ body {
   padding: 0 50px;
   height: 64px;
   line-height: 64px;
+  width: 50px;
 }
 .fill-muted {
   fill: #8c8c8c;
@@ -3061,6 +3062,10 @@ section.ant-layout.ant-layout-has-sider.layouFt-dashboard.layout-profile
 /*BPMN Style */
 .highlight:not(.djs-connection) .djs-visual > :nth-child(1) {
   fill: green !important; /* color elements as green */
+}
+
+.highlight-participant:not(.djs-connection) .djs-visual > :nth-child(1) {
+  fill: yellow !important; /* color elements as green */
 }
 
 /* Map Style */

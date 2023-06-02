@@ -21,11 +21,15 @@ import {
   Layout,
   Menu,
   theme,
+  Select,
 } from "antd";
 import { useState } from "react";
 import CustomSider from "../components/sider";
 import LineChart from "../components/lineChart";
 import Dashboard from "../components/dashboard";
+import Axios from "axios";
+import { useEffect } from "react";
+
 const { Header, Content, Footer, Sider } = Layout;
 
 const items2 = [UserOutlined, LaptopOutlined, NotificationOutlined].map(
@@ -47,22 +51,72 @@ const items2 = [UserOutlined, LaptopOutlined, NotificationOutlined].map(
 );
 
 function AnalyticPage() {
+  const [simulationOption, setSimulationOption] = useState([]);
+  const [menuItem, setMenuItem] = useState([]);
+  const [curSimId, setCurSimId] = useState(null);
+  const [analyticsData, setAnalyticsData] = useState([]);
+
+  useEffect(() => {
+    Axios.get("http://localhost:8080/get_simulation_list").then((response) => {
+      console.log(response.data);
+      const temp = response.data.map((e) => {
+        return {
+          value: e.SimulationKey,
+          label: e.SimulationKey,
+        };
+      });
+      setSimulationOption(temp);
+    });
+  }, []);
+
   const {
     token: { colorBgContainer },
   } = theme.useToken();
 
+  const handleChange = (value) => {
+    console.log(`selected ${value}`);
+
+    Axios.get(`http://localhost:8080/get_participants/${value}`).then(
+      (response) => {
+        console.log(response.data);
+        const temp = response.data.map((e) => {
+          return {
+            key: e.ParticipantKey,
+            label: e.ParticipantKey,
+          };
+        });
+        setCurSimId(value);
+        setMenuItem(temp);
+      }
+    );
+  };
+
+  const onClickParticipant = (value) => {
+    console.log(`selected ${value.key}`);
+    Axios.get(
+      `http://localhost:8080/get_statistic/${curSimId}/${value.key}`
+    ).then((response) => {
+      console.log(response.data);
+      setAnalyticsData(response.data);
+    });
+  };
+
   return (
     <motion.div
-      className="container text-center"
+      className="text-center"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 1 }}
       transition={{ duration: 0.75, ease: "easeOut" }}
     >
-      <Layout className="layout-default layout-signin">
+      <Layout
+        className="layout-default layout-signin"
+        style={{ width: "100%" }}
+      >
         <Content
           style={{
             padding: "0 50px",
+            width: "100%",
           }}
         >
           <Breadcrumb
@@ -74,13 +128,7 @@ function AnalyticPage() {
                 title: "Home",
               },
               {
-                title: <a href="">Application Center</a>,
-              },
-              {
-                title: <a href="">Application List</a>,
-              },
-              {
-                title: "An Application",
+                title: "Analytics",
               },
             ]}
           />
@@ -96,6 +144,14 @@ function AnalyticPage() {
               }}
               width={200}
             >
+              <Typography>Choose Simulation</Typography>
+              <Select
+                style={{
+                  width: "100%",
+                }}
+                options={simulationOption}
+                onChange={handleChange}
+              />
               <Menu
                 mode="inline"
                 defaultSelectedKeys={["1"]}
@@ -103,7 +159,8 @@ function AnalyticPage() {
                 style={{
                   height: "100%",
                 }}
-                items={items2}
+                onClick={onClickParticipant}
+                items={menuItem}
               />
             </Sider>
             <Content
@@ -112,7 +169,7 @@ function AnalyticPage() {
                 minHeight: 280,
               }}
             >
-              <Dashboard />
+              <Dashboard data={analyticsData} />
             </Content>
           </Layout>
         </Content>

@@ -253,16 +253,26 @@ export const printWhole = (obj) => {
 };
 
 export const move = (obj) => {
-    console.log(obj);
-    for (let i = 0; i < obj.transport.length; i++) {
-      obj.transport[i].move();
-    }
-    const id = "peep" + obj.name;
-    runShipment(obj.route, id, obj, obj.transport[0], [
-      () => {
-        console.log("Finish shipment");
-        obj.unload(obj);
-      },
-    ]);
-    console.log(obj.transport);
+  console.log(obj);
+  for (let i = 0; i < obj.transport.length; i++) {
+    obj.transport[i].move();
   }
+  const id = "peep" + obj.name;
+  runShipment(obj.route, id, obj, obj.transport[0], [
+    () => {
+      console.log("Finish shipment");
+      obj.unload(obj);
+    },
+  ]);
+  console.log(obj.transport);
+};
+
+export const load = (obj) => {
+  console.log("SHIPPING: ", obj.customerDemand);
+  for (let i = 0; i < obj.customerDemand.length; i++) {
+    console.log(obj.customerDemand);
+    obj.customerDemand[i].transport.loadBulk(obj.customerDemand[i].demand);
+  }
+  obj.calcEverything(obj);
+  obj.runState = RUN_STATE.CAN_RUN;
+};

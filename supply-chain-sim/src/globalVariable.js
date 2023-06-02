@@ -1,19 +1,12 @@
 import {
-  Node,
   Graph,
   Agent,
   Event,
   Activity,
-  Gateway,
   Transportation,
 } from "./constants/class";
-import {
-  AGENT_TYPE,
-  RUN_STATE,
-  EVENT_TYPE,
-  EVENT_START_TYPE,
-} from "./constants";
-import { constructGraph, move, print, printWhole } from "./constants/callback";
+import { AGENT_TYPE, EVENT_TYPE, EVENT_START_TYPE } from "./constants";
+import { load, move, print, printWhole } from "./constants/callback";
 
 export const supplier = new Agent(
   "supplier",
@@ -336,6 +329,11 @@ export var TASK_DATA = {
       id: "move",
       name: "move",
       callback: move,
+    },
+    {
+      id: "load",
+      name: "load",
+      callback: load,
     },
   ],
 };

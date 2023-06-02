@@ -3,37 +3,9 @@ const express = require("express");
 const app = express();
 const bodyParser = require("body-parser");
 const cors = require("cors");
-const mysql = require("mysql");
+const mysql = require("mysql2");
 
 const PORT = 8080;
-
-const participants = [
-  {
-    id: "101",
-    name: "supplier",
-  },
-  {
-    id: "102",
-    name: "distributor",
-  },
-  {
-    id: "103",
-    name: "customer",
-  },
-  {
-    id: "104",
-    name: "customer2",
-  },
-];
-
-const statistic = [
-  {
-    ParticipantKey: "100",
-    SimulationKey: "201",
-    TotalInventory: "1000",
-    TotalBackorder: "20",
-  },
-];
 
 app.use(cors());
 app.use(express.json());
@@ -42,7 +14,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
-  password: "password",
+  password: "Chip1018!",
   database: "simulation_data",
 });
 
@@ -56,7 +28,7 @@ app.post("/new_simulation", (req, res) => {
   console.log(data);
   //let dataJson = JSON.parse(data.id);
   console.log(data.id);
-  const sqlCreate = `insert into Simulation (SimulationKey,Date) values ('${data.id}', CURDATE());`;
+  const sqlCreate = `insert into Simulation (SimulationKey,Date,EndDate) values ('${data.id}', STR_TO_DATE('${data.date}','%Y-%m-%dT%T.%fZ'), STR_TO_DATE('${data.endDate}','%Y-%m-%dT%T.%fZ'));`;
   db.query(sqlCreate, (err, result) => {
     if (err) throw err;
     res.send(result);
@@ -110,7 +82,7 @@ app.post("/insert_statistic", (req, res) => {
         `('${p.participantKey}', '${p.simulationKey}','${p.data.totalInventory}', '${p.data.otalBackorder}', CURDATE())`
     )
     .join(","); */
-  const values = `('${body.participantKey}', '${body.simulationKey}','${body.data.totalInventory}', '${body.data.otalBackorder}', STR_TO_DATE('${body.date}','%Y-%m-%dT%T.%fZ'))`;
+  const values = `('${body.participantKey}', '${body.simulationKey}','${body.data.totalInventory}', '${body.data.totalBackOrder}', STR_TO_DATE('${body.date}','%Y-%m-%dT%T.%fZ'))`;
   const sqlCreate = `insert into Statistic (ParticipantKey, SimulationKey, TotalInventory, TotalBackorder, Date) values ${values};`;
   db.query(sqlCreate, (err, result) => {
     if (err) throw err;
@@ -144,7 +116,7 @@ app.post("/insert_statistic", (req, res) => {
 });
 
 app.get("/get_simulation_list", (req, res) => {
-  const sqlGet = "select UniqueKey from simulation;";
+  const sqlGet = "select * from simulation;";
   db.query(sqlGet, (err, result) => {
     if (err) throw err;
     res.send(result);
@@ -162,90 +134,23 @@ where simulation.SimulationKey = '${id}'`;
   });
 });
 
-app.get("/get_statistic/:id", (req, res) => {
+app.get("/get_statistic/:id/:participant", (req, res) => {
   const id = req.params.id;
+  const participant = req.params.participant;
   console.log(id);
   const sqlGet = `select statistic.UniqueKey, statistic.ParticipantKey, statistic.TotalInventory,
 statistic.TotalBackorder, statistic.Date, statistic.SimulationKey, participants.name
 from statistic inner join simulation on
 statistic.SimulationKey = simulation.SimulationKey inner join participants
 on statistic.SimulationKey = participants.SimulationKey and
-statistic.ParticipantKey = participants.ParticipantKey where participants.SimulationKey = ${id};`;
+statistic.ParticipantKey = participants.ParticipantKey where participants.SimulationKey = '${id}'
+and participants.ParticipantKey = '${participant}';`;
   db.query(sqlGet, (err, result) => {
     if (err) throw err;
     res.send(result);
   });
 
   //res.send(`<h1>${req.params.id}</h1>`);
-});
-
-app.post("/create_participants_table", (req, res) => {
-  const curDate = dayjs();
-  const tableId =
-    "participant_" +
-    curDate.date().toString() +
-    "_" +
-    curDate.month().toString() +
-    "_" +
-    curDate.year().toString() +
-    "_" +
-    curDate.hour().toString() +
-    "" +
-    curDate.minute().toString() +
-    "" +
-    curDate.second().toString();
-  const sqlCreate = `CREATE TABLE ${tableId} (UniqueKey int NOT NULL PRIMARY KEY, Name varchar(255));`;
-  db.query(sqlCreate, (err, result) => {
-    if (err) throw err;
-    res.send(result);
-  });
-});
-
-app.get("/list_table", (req, res) => {
-  const sqlGet = "SHOW TABLES;";
-  db.query(sqlGet, (err, result) => {
-    if (err) throw err;
-    res.send(result);
-  });
-});
-
-app.get("/get", (req, res) => {
-  //res.send("hello world bitch");
-  const sqlGet = "select * from data";
-  db.query(sqlGet, (err, result) => {
-    if (err) throw err;
-    res.send(result);
-  });
-});
-
-app.post("/post", (req, res) => {
-  const data = req.body.data;
-  console.log(data);
-  let sum = 0;
-  for (let i = 0; i < data.length; i++) {
-    sum += data[i].quantity;
-  }
-  console.log(sum);
-  /* const sqlInsert = "insert into data(stock) values (?)";
-  db.query(sqlInsert, [data], (err, result) => {}); */
-});
-
-app.get("/getList", (req, res) => {
-  const sqlGet =
-    "select statistic.UniqueKey, statistic.TotalInventory, statistic.Date from statistic inner join participant on statistic.ParticipantKey = participant.UniqueKey where participant.UniqueKey=102;";
-  db.query(sqlGet, (err, result) => {
-    if (err) throw err;
-    res.send(result);
-  });
-});
-
-app.get("/test", (req, res) => {
-  const values = participants.map((p) => `(${p.id},"${p.name}")`).join(",");
-  const sqlGet = `insert into Participant (UniqueKey, Name) values ${values}`;
-  db.query(sqlGet, (err, result) => {
-    if (err) throw err;
-    res.send(result);
-  });
 });
 
 app.listen(PORT, () => {

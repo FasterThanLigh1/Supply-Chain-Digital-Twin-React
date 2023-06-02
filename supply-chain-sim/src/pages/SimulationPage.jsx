@@ -54,28 +54,10 @@ const items2 = [UserOutlined, LaptopOutlined, NotificationOutlined].map(
 
 function SimulationPage() {
   const dispatch = useDispatch();
-
-  /* useEffect(() => {
-    Axios.get("http://localhost:8080/get").then((response) => {
-      console.log(response.data);
-    });
-  }); */
-
-  const testSubmit = () => {
-    Axios.post("http://localhost:8080/post", {
-      data: 30,
-    }).then(() => {
-      console.log("success");
-    });
-  };
-
-  /*   const {
-    token: { colorBgContainer },
-  } = theme.useToken(); */
   const colorBgContainer = MAIN_COLOR;
   return (
     <motion.div
-      className="container text-center"
+      className="text-center"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 1 }}
@@ -132,13 +114,7 @@ function SimulationPage() {
                 title: "Home",
               },
               {
-                title: <a href="">Application Center</a>,
-              },
-              {
-                title: <a href="">Application List</a>,
-              },
-              {
-                title: "An Application",
+                title: "Simulation",
               },
             ]}
           />

@@ -11,18 +11,47 @@ import axios from "axios";
 import { Button, Upload, message } from "antd";
 import "bpmn-js/dist/assets/diagram-js.css";
 import { CURRENT_BPMN_MODEl } from "../constants";
-import {
-  CURRENT_PARTICIPANTS_DATA,
-} from "../globalVariable";
+import { CURRENT_PARTICIPANTS_DATA } from "../globalVariable";
+import { useSelector, useDispatch } from "react-redux/es/exports";
+import { selectName, selectId } from "../features/chosenSlice";
+import { selectTaskId } from "../features/stateSlice";
 
 function BpmnFooter(url) {
+  const dispatch = useDispatch();
+  const thisName = useSelector(selectName);
+  const thisTaskId = useSelector(selectTaskId);
+  const thisId = useSelector(selectId);
+  const [prevId, setPrevId] = useState(null);
   const [diagram, diagramSet] = useState("");
   const [currentModeler, modelerSet] = useState(null);
+  ///const [canvas, setCanvas] = useState(null);
   const container = document.getElementById("container");
 
   useEffect(() => {
     console.log(CURRENT_PARTICIPANTS_DATA.referenceParticipants);
   }, []);
+
+  useEffect(() => {
+    console.log(thisTaskId);
+  }, [thisTaskId]);
+
+  useEffect(() => {
+    console.log("In footer: ", thisName, thisId);
+    if (currentModeler != null) {
+      var elementRegistry = currentModeler.get("elementRegistry");
+      var canvas = currentModeler.get("canvas");
+      console.log(elementRegistry);
+      elementRegistry.forEach(function (elem, gfx) {
+        if (elem.id === thisId) {
+          if (prevId != null) {
+            canvas.removeMarker(prevId, "highlight-participant");
+          }
+          canvas.addMarker(elem.id, "highlight-participant");
+          setPrevId(elem.id);
+        }
+      });
+    }
+  }, [thisName]);
 
   useEffect(() => {
     if (diagram.length === 0) {
@@ -64,12 +93,13 @@ function BpmnFooter(url) {
           } else {
             var elementRegistry = modeler.get("elementRegistry");
             var canvas = modeler.get("canvas");
+            //setCanvas(canvas);
             console.log(elementRegistry);
             elementRegistry.forEach(function (elem, gfx) {
               if (elem.type === "bpmn:StartEvent") {
                 // do something with the task
                 const businessObject = elem.businessObject;
-                canvas.addMarker(elem.id, "highlight");
+                /* canvas.addMarker(elem.id, "highlight"); */
                 console.log("Start", elem);
                 //canvas.addMarker(elem.id, "highlight");
               }

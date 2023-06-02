@@ -9,113 +9,120 @@
   =========================================================
   * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 */
-
+import { useState, useEffect } from "react";
 import ReactApexChart from "react-apexcharts";
 import { Typography } from "antd";
 import { MinusOutlined } from "@ant-design/icons";
 
-const lineChart = {
-  series: [
-    {
-      name: "Mobile apps",
-      data: [350, 40, 300, 220, 500, 250, 400, 230, 500],
-      offsetY: 0,
-    },
-    {
-      name: "Websites",
-      data: [30, 90, 40, 140, 290, 290, 340, 230, 400],
-      offsetY: 0,
-    },
-  ],
+function LineChart({ data, title }) {
+  const { Title, Paragraph } = Typography;
+  const [chartData, setChartData] = useState([]);
+  const [categoryData, setCategoryData] = useState([]);
 
-  options: {
-    chart: {
-      width: "100%",
-      height: 350,
-      type: "area",
-      toolbar: {
+  useEffect(() => {
+    console.log(data);
+
+    const temp = data.map((e) => {
+      if (title == "inventory") {
+        return e.TotalInventory;
+      } else if (title == "backOrder") {
+        return e.TotalBackorder;
+      }
+    });
+    const tempDate = data.map((e) => {
+      return e.Date;
+    });
+    console.log("new data", temp);
+    setChartData(temp);
+    setCategoryData(tempDate);
+  }, [data]);
+
+  const lineChart = {
+    series: [
+      {
+        name: title,
+        data: chartData,
+        offsetY: 0,
+      },
+    ],
+
+    options: {
+      chart: {
+        width: "100%",
+        height: 350,
+        type: "area",
+        toolbar: {
+          show: false,
+        },
+      },
+
+      legend: {
         show: false,
       },
-    },
 
-    legend: {
-      show: false,
-    },
+      dataLabels: {
+        enabled: false,
+      },
+      stroke: {
+        curve: "smooth",
+      },
 
-    dataLabels: {
-      enabled: false,
-    },
-    stroke: {
-      curve: "smooth",
-    },
+      yaxis: {
+        labels: {
+          style: {
+            fontSize: "14px",
+            fontWeight: 600,
+            colors: ["#8c8c8c"],
+          },
+        },
+      },
 
-    yaxis: {
-      labels: {
-        style: {
-          fontSize: "14px",
-          fontWeight: 600,
-          colors: ["#8c8c8c"],
+      xaxis: {
+        labels: {
+          style: {
+            fontSize: "14px",
+            fontWeight: 600,
+            colors: [
+              "#8c8c8c",
+              "#8c8c8c",
+              "#8c8c8c",
+              "#8c8c8c",
+              "#8c8c8c",
+              "#8c8c8c",
+              "#8c8c8c",
+              "#8c8c8c",
+              "#8c8c8c",
+            ],
+          },
+        },
+        categories: categoryData,
+      },
+
+      tooltip: {
+        y: {
+          formatter: function (val) {
+            return val;
+          },
         },
       },
     },
-
-    xaxis: {
-      labels: {
-        style: {
-          fontSize: "14px",
-          fontWeight: 600,
-          colors: [
-            "#8c8c8c",
-            "#8c8c8c",
-            "#8c8c8c",
-            "#8c8c8c",
-            "#8c8c8c",
-            "#8c8c8c",
-            "#8c8c8c",
-            "#8c8c8c",
-            "#8c8c8c",
-          ],
-        },
-      },
-      categories: [
-        "Feb",
-        "Mar",
-        "Apr",
-        "May",
-        "Jun",
-        "Jul",
-        "Aug",
-        "Sep",
-        "Oct",
-      ],
-    },
-
-    tooltip: {
-      y: {
-        formatter: function (val) {
-          return val;
-        },
-      },
-    },
-  },
-};
-
-function LineChart() {
-  const { Title, Paragraph } = Typography;
+  };
 
   return (
     <>
       <div className="linechart">
         <div>
-          <Title level={5}>Active Users</Title>
-          <Paragraph className="lastweek">
+          <Title level={5}>{title} per day</Title>
+          {/* <Paragraph className="lastweek">
             than last week <span className="bnb2">+30%</span>
-          </Paragraph>
+          </Paragraph> */}
         </div>
         <div className="sales">
           <ul>
-            <li>{<MinusOutlined />} Traffic</li>
-            <li>{<MinusOutlined />} Sales</li>
+            <li>
+              {<MinusOutlined />} {title}
+            </li>
+            {/* <li>{<MinusOutlined />} Sales</li> */}
           </ul>
         </div>
       </div>
