@@ -7,13 +7,13 @@ import { motion } from "framer-motion";
 function LandingPage() {
   return (
     <motion.div
-      className="container text-center"
+      className="text-center"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 1 }}
       transition={{ duration: 0.75, ease: "easeOut" }}
     >
-      <div className="min-h-fit flex flex-col text-white">
+      <div className="h-480 flex flex-col text-white bg-sky-900">
         <main className="container mx-auto px-6 pt-16 flex-1 text-center">
           <h2 className="text-2xl md:text-4xl lg:text-6xl uppercase">
             SUPPLY CHAIN
@@ -30,7 +30,7 @@ function LandingPage() {
             <Button
               name="member[subscribe]"
               id="member_submit"
-              className="h-20 py-2 px-4 md:text-2xl lg:text-3xl justify-between w-fit lg:py-6 lg:px-12 font-bold uppercase cursor-pointer hover:opacity-75 rounded-full text-white"
+              className="mt-8 mb-8 items-center h-20 py-2 px-4 md:text-2xl lg:text-1xl justify-between w-fit lg:px-12 font-bold uppercase cursor-pointer hover:opacity-75 rounded-full text-white"
               //className="bg-primary md:rounded-tl-none md:rounded-bl-none rounded-full text-2xl py-4 px-6 md:px-10 lg:py-6 lg:px-12 font-bold uppercase cursor-pointer hover:opacity-75 duration-150"
             >
               Get Started

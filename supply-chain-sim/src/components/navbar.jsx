@@ -1,5 +1,13 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import supplyChainIcon from "../../public/Image/supply-chain.png";
+import { Menu } from "antd";
+import {
+  BuildOutlined,
+  HomeOutlined,
+  NodeIndexOutlined,
+  DashboardOutlined,
+} from "@ant-design/icons";
 import {
   simulationRoute,
   bpmnRoute,
@@ -7,18 +15,43 @@ import {
   analysisRoute,
 } from "../constants/route";
 
+const items = [
+  {
+    label: <Link to={landingRoute}>Home</Link>,
+    key: "home",
+    icon: <HomeOutlined />,
+  },
+  {
+    label: <Link to={bpmnRoute}>Bpmn</Link>,
+    key: "bpmn",
+    icon: <BuildOutlined />,
+  },
+  {
+    label: <Link to={simulationRoute}>Simulation</Link>,
+    key: "simulation",
+    icon: <NodeIndexOutlined />,
+  },
+  {
+    label: <Link to={analysisRoute}>Analysis</Link>,
+    key: "analysis",
+    icon: <DashboardOutlined />,
+  },
+];
+
 const Navigation = () => {
+  const [current, setCurrent] = useState("home");
+  const onClick = (e) => {
+    console.log("click ", e);
+    setCurrent(e.key);
+  };
+
   return (
-    <nav className="sticky top-0 bg-white ">
-      <div className="max-w-screen-2xl flex flex-wrap items-center justify-between p-4">
+    <nav className="sticky top-0 bg-white z-50 ">
+      <div className="flex flex-wrap items-center justify-between p-4 ">
         <a href="https://flowbite.com/" className="flex items-center">
-          <img
-            src="https://flowbite.com/docs/images/logo.svg"
-            className="h-8 mr-3"
-            alt="Flowbite Logo"
-          />
+          <img src={supplyChainIcon} className="h-8 mr-3" alt="Flowbite Logo" />
           <span className="self-center text-2xl font-semibold whitespace-nowrap dark:text-white">
-            Flowbite
+            Digital Twin
           </span>
         </a>
         <button
@@ -43,6 +76,15 @@ const Navigation = () => {
             ></path>
           </svg>
         </button>
+        <Menu
+          className="text-2xl"
+          selectedKeys={[current]}
+          mode="horizontal"
+          items={items}
+          onClick={onClick}
+          disabledOverflow
+        />
+        {/*
         <div className="hidden w-full md:block md:w-auto" id="navbar-default">
           <ul className="font-medium flex flex-col p-4 md:p-0 mt-4 border border-gray-100 rounded-lg bg-gray-50 md:flex-row md:space-x-8 md:mt-0 md:border-0 md:bg-white dark:bg-gray-800 md:dark:bg-gray-900 dark:border-gray-700">
             <li>
@@ -59,7 +101,7 @@ const Navigation = () => {
                 href="#"
                 className="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent"
               >
-                <Link to={bpmnRoute}>Bpmn</Link>
+                c
               </div>
             </li>
             <li>
@@ -79,7 +121,7 @@ const Navigation = () => {
               </div>
             </li>
           </ul>
-        </div>
+        </div> */}
       </div>
     </nav>
   );

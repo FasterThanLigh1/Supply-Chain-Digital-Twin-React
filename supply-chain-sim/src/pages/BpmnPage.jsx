@@ -5,7 +5,7 @@ import BpmnModeler from "../components/bpmnModeler";
 function BpmnPage() {
   return (
     <motion.div
-      className="container text-center"
+      className="text-center"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 1 }}
