@@ -17,10 +17,12 @@ import {
   GATEWAY_TYPE,
   MESSAGE_TYPE,
 } from ".";
+import _ from "lodash";
 
 export const execute = (obj, curTime) => {
   //console.log(obj.startEvent);
   console.log("[RUN] " + obj.name + " | Current Hour: " + curTime);
+  console.log(obj.processes);
   //console.log(obj.processes);
   if (obj.runState === RUN_STATE.RUNNING) return;
   obj.runState = RUN_STATE.RUNNING;
@@ -29,7 +31,7 @@ export const execute = (obj, curTime) => {
       if (obj.startEvent.startTime == curTime) {
         obj.startEvent.run(obj);
         obj.processes.push({
-          task: obj.startEvent.next,
+          task: _.cloneDeep(obj.startEvent.next),
           duration: obj.startEvent.next.duration,
           curDuration: 1,
         });
@@ -52,25 +54,27 @@ export const execute = (obj, curTime) => {
             obj.processes[i].task.next[j].startType !== EVENT_START_TYPE.MESSAGE
           ) {
             obj.processes.push({
-              task: obj.processes[i].task.next[j],
+              task: _.cloneDeep(obj.processes[i].task.next[j]),
               duration: obj.processes[i].task.next[j].duration,
               curDuration: 1,
             });
           }
         }
-        //console.log("After:", obj.processes);
-        obj.processes.splice(0, 1);
+        console.log("After:", obj.processes);
         i--;
       } else {
+        console.log("Process: ", obj.processes);
         if (obj.processes[i].curDuration >= obj.processes[i].duration) {
           obj.processes[i].task.run(obj);
           if (obj.runState === RUN_STATE.RUNNING) continue;
-          if (obj.processes[i].task.throw !== null) {
-            obj.processes[i].task.throw.processes.push({
+          if (obj.processes[i].task.throwId !== null) {
+            console.log(obj.processes[i].task.throwId);
+            pushEvent(obj.processes[i].task.throwId);
+            /* obj.processes[i].task.throw.processes.push({
               task: obj.processes[i].task.throwEvent,
               duration: obj.processes[i].task.throw.startEvent.duration,
               curDuration: 1,
-            });
+            }); */
           }
           if (
             obj.processes[i].task.next.startType === EVENT_START_TYPE.MESSAGE
@@ -87,6 +91,7 @@ export const execute = (obj, curTime) => {
             }
           } else {
             obj.processes[i].task = obj.processes[i].task.next;
+            console.log("After: ", obj.processes[i]);
           }
 
           obj.processes[i].curDuration = 1;
@@ -104,7 +109,7 @@ export const execute = (obj, curTime) => {
   }
 };
 
-export const runShipment = (step, id, obj, vehicle, onFinishCallBack) => {
+export const runShipment = async (step, id, obj, onFinishCallBack, cargo) => {
   if (CURRENT_MAP.current.getLayer(id)) return;
 
   /* dispatch(setState(true)); */
@@ -178,17 +183,15 @@ export const openNotificationWithIcon = (message, description, type) => {
 export const constructVertices = (name, id, vertices) => {
   console.log(name, id);
   const newAgent = new Agent(name, 37, -98, [], null, AGENT_TYPE.SUPPLIER, id);
-  vertices.push(newAgent);
-  return newAgent;
+  const deepAgent = _.cloneDeep(newAgent);
+  vertices.push(deepAgent);
+  return deepAgent;
 };
 
 export const constructGraph = (vertices) => {
-  //Add vertices
   for (var i = 0; i < vertices.length; i++) {
-    CURRENT_GRAPH.addVertex(new Node(i, vertices[i]));
-
     //Add references
-    for (let k = 0; k < vertices[i].taskList.length; k++) {
+    /* for (let k = 0; k < vertices[i].taskList.length; k++) {
       console.log(vertices[i]);
       if (vertices[i].taskList[k].throwId != null) {
         for (
@@ -208,11 +211,67 @@ export const constructGraph = (vertices) => {
           }
         }
       }
-    }
+    } */
+
+    //Add vertices
+    CURRENT_GRAPH.addVertex(new Node(i, _.cloneDeep(vertices[i])));
+    console.log("CONSTRUCT GRAPH", CURRENT_GRAPH);
   }
   //Add initial path
   for (var i = 0; i < vertices.length - 1; i++) {
     CURRENT_GRAPH.addEdge(i, i + 1);
+  }
+};
+
+export const constructThrowEvent = () => {
+  for (let i = 0; i < CURRENT_GRAPH.AdjList.length; i++) {
+    for (let j = 0; j < CURRENT_GRAPH.AdjList[i].data.taskList.length; j++) {
+      if (CURRENT_GRAPH.AdjList[i].data.taskList[j].throwId !== null) {
+        console.log("Task: ", CURRENT_GRAPH.AdjList[i].data.taskList[j].name);
+        const temp = getThrowData(
+          CURRENT_GRAPH.AdjList[i].data.taskList[j].throwId
+        ).then((value) => {
+          console.log(value);
+          CURRENT_GRAPH.AdjList[i].data.taskList[j].throw = value.throw;
+          CURRENT_GRAPH.AdjList[i].data.taskList[j].throwEvent =
+            value.throwEvent;
+        });
+        console.log(CURRENT_GRAPH.AdjList[i].data.taskList[j]);
+      }
+    }
+    console.log("Tasklist: ", CURRENT_GRAPH.AdjList[i].data.taskList);
+  }
+};
+
+export const getThrowData = async (id) => {
+  for (let i = 0; i < CURRENT_GRAPH.AdjList.length; i++) {
+    for (let j = 0; j < CURRENT_GRAPH.AdjList[i].data.taskList.length; j++) {
+      if (CURRENT_GRAPH.AdjList[i].data.taskList[j].id == id) {
+        return {
+          throw: CURRENT_GRAPH.AdjList[i].data,
+          throwEvent: CURRENT_GRAPH.AdjList[i].data.taskList[j],
+        };
+      }
+    }
+  }
+  return {
+    throw: null,
+    throwEvent: null,
+  };
+};
+
+export const pushEvent = (id) => {
+  for (let i = 0; i < CURRENT_GRAPH.AdjList.length; i++) {
+    for (let j = 0; j < CURRENT_GRAPH.AdjList[i].data.taskList.length; j++) {
+      if (CURRENT_GRAPH.AdjList[i].data.taskList[j].id == id) {
+        CURRENT_GRAPH.AdjList[i].data.processes.push({
+          task: CURRENT_GRAPH.AdjList[i].data.taskList[j],
+          duration: CURRENT_GRAPH.AdjList[i].data.taskList[j].duration,
+          curDuration: 1,
+        });
+        console.log("After push: ", CURRENT_GRAPH.AdjList[i].data.processes);
+      }
+    }
   }
 };
 
@@ -258,7 +317,7 @@ export const move = (obj) => {
     obj.transport[i].move();
   }
   const id = "peep" + obj.name;
-  runShipment(obj.route, id, obj, obj.transport[0], [
+  runShipment(obj.route, id, obj, [
     () => {
       console.log("Finish shipment");
       obj.unload(obj);
@@ -275,4 +334,89 @@ export const load = (obj) => {
   }
   obj.calcEverything(obj);
   obj.runState = RUN_STATE.CAN_RUN;
+};
+
+const abstractRemoveInventory = (demand, obj) => {
+  const returnDeliver = [];
+  for (let i = 0; i < demand.length; i++) {
+    for (let j = 0; j < obj.inventory.length; j++) {
+      if (obj.inventory[j].name == demand[i].name) {
+        if (obj.inventory[j].quantity == 0) {
+          alert(`stock out for ${obj.inventory[j].name}`);
+          returnDeliver.push({
+            name: demand[i].name,
+            quantity: 0,
+          });
+        } else {
+          const temp = obj.inventory[j].quantity - demand[i].quantity;
+          if (temp < 0) {
+            console.log(
+              "Not enough in inventory and added to backlog " + obj.name
+            );
+            const itemToAdd = {
+              name: demand[i].name,
+              quantity: demand[i].quantity,
+            };
+            obj.backOrder.push(itemToAdd);
+            returnDeliver.push({
+              name: demand[i].name,
+              quantity: 0,
+            });
+          } else {
+            //obj.inventory[j].quantity = temp;
+            returnDeliver.push(demand[i]);
+          }
+        }
+      }
+    }
+  }
+  console.log("After:", obj.inventory);
+  return returnDeliver;
+};
+
+const abstractAddInventory = (item, obj) => {
+  console.log("Add item: ", item);
+  const tempInventory = _.cloneDeep(obj.inventory);
+  for (let i = 0; i < item.length; i++) {
+    for (let j = 0; j < tempInventory.length; j++) {
+      if (item[i].name == tempInventory[j].name) {
+        tempInventory[j].quantity += item[i].quantity;
+      }
+    }
+  }
+  obj.inventory = tempInventory;
+  console.log("After:", obj);
+};
+
+const getCustomer = (id) => {
+  for (let i = 0; i < CURRENT_GRAPH.AdjList.length; i++) {
+    if (CURRENT_GRAPH.AdjList[i].id == id) {
+      return CURRENT_GRAPH.AdjList[i];
+    }
+  }
+};
+
+export const abstractMove = (obj) => {
+  const tempDemand = obj.getDemand();
+  let customers = obj.getCustomer();
+  console.log("Customers: ", customers);
+  //obj.abstractRemoveInventory(tempDemand[0].demand);
+  for (let i = 0; i < tempDemand.length; i++) {
+    const temp = abstractRemoveInventory(tempDemand[i].demand, obj);
+    console.log("After each remove: ", temp);
+    const id = "peep" + obj.name;
+    console.log("Customer: ", getCustomer(customers[i].id));
+    runShipment(obj.route, id, obj, [
+      () => {
+        //console.log("Finish shipment");
+        const tempCustomer = getCustomer(customers[i].id);
+        abstractAddInventory(temp, tempCustomer.data);
+      },
+    ]);
+
+    /* const temp2 = _.cloneDeep(temp1.data.inventory);
+    temp2[0].quantity = 10;
+    temp1.data.inventory = temp2;
+    console.log("after changes: ", temp1); */
+  }
 };

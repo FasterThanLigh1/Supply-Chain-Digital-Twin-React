@@ -1,11 +1,13 @@
 import React from "react";
 import { useEffect, useRef, useState } from "react";
-import { Button, Typography, Modal, DatePicker, Space } from "antd";
+import { Button, Typography, Modal, DatePicker, Space, Upload } from "antd";
 import mapboxgl from "mapbox-gl"; // eslint-disable-line import/no-webpack-loader-syntax
 import { AGENT_TYPE, MESSAGE_TYPE, mapaboxAcessToken } from "../constants";
 import {
   CURRENT_PARTICIPANTS_DATA,
   CURRENT_SIMULATION_DATA,
+  EXPORT_DATA,
+  VERTICES,
 } from "../globalVariable";
 import * as turf from "@turf/turf";
 import carImage from "../../public/Image/truck.png";
@@ -16,7 +18,10 @@ import { UseInterval } from "../ultils/CustomHooks";
 import dayjs from "dayjs";
 import {
   RESET_SIMULATION,
+  abstractMove,
   execute,
+  load,
+  move,
   openNotificationWithIcon,
 } from "../constants/callback";
 import { CURRENT_GRAPH } from "../globalVariable";
@@ -24,6 +29,7 @@ import { CURRENT_MAP } from "../globalVariable";
 import { setCurrentDate, selectCurrentDate } from "../features/dateSlice";
 import Axios from "axios";
 import QueryString from "qs";
+import { ExportObject } from "../constants/class";
 
 mapboxgl.accessToken = mapaboxAcessToken;
 const { RangePicker } = DatePicker;
@@ -425,6 +431,7 @@ function Mapbox({ graph }) {
   };
 
   const exportData = (data) => {
+    console.log("Export data");
     const jsonString = `data:text/json;chatset=utf-8,${encodeURIComponent(
       JSON.stringify(data)
     )}`;
@@ -435,10 +442,60 @@ function Mapbox({ graph }) {
     link.click();
   };
 
+  const exportParticipantData = () => {
+    EXPORT_DATA.participants.length = 0;
+    /* for (let i = 0; i < VERTICES.length; i++) {
+      console.log(VERTICES[i]);
+      const temp = new ExportObject(VERTICES[i]);
+      EXPORT_DATA.participants.push(temp);
+    } */
+    for (let i = 0; i < CURRENT_GRAPH.AdjList.length; i++) {
+      const temp = new ExportObject(CURRENT_GRAPH.AdjList[i]);
+      EXPORT_DATA.participants.push(temp);
+    }
+    exportData(EXPORT_DATA);
+  };
+
+  const uploadProps = {
+    name: "file",
+    action: "https://www.mocky.io/v2/5cc8019d300000980a055e76",
+    headers: {
+      authorization: "authorization-text",
+    },
+    onChange(info) {
+      if (info.file.status !== "uploading") {
+        console.log(info.file, info.fileList);
+      }
+      if (info.file.status === "done") {
+        message.success(`${info.file.name} file uploaded successfully`);
+      } else if (info.file.status === "error") {
+        message.error(`${info.file.name} file upload failed.`);
+      }
+    },
+  };
+
+  const onImportData = (data) => {
+    console.log(data);
+    /* for (let i = 0; i < data.participants.length; i++) {
+      VERTICES[i].onImport(data.participants[i]);
+    } */
+    for (let i = 0; i < CURRENT_GRAPH.AdjList.length; i++) {
+      CURRENT_GRAPH.AdjList[i].data.onImport(data.participants[i]);
+    }
+  };
+
   return (
     <div>
       <Button onClick={onClickSimulate}>Add route</Button>
       <Button onClick={run}>Run</Button>
+      <Button
+        onClick={() => {
+          abstractMove(CURRENT_GRAPH.AdjList[0].data);
+        }}
+      >
+        Test{" "}
+      </Button>
+      <Button onClick={simulation}>Next</Button>
       <Button
         onClick={() => {
           setIsModalOpen(true);
@@ -446,8 +503,28 @@ function Mapbox({ graph }) {
       >
         Run Sim
       </Button>
-      <Button>Import</Button>
-      <Button onClick={exportData(CURRENT_PARTICIPANTS_DATA)}>Export</Button>
+      <Upload
+        {...uploadProps}
+        beforeUpload={(file) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            console.log("[Upload]", e.target.result);
+            onImportData(JSON.parse(e.target.result));
+          };
+          reader.readAsText(file);
+          // Prevent upload
+          return false;
+        }}
+      >
+        <Button>Import</Button>
+      </Upload>
+      <Button
+        onClick={() => {
+          exportParticipantData();
+        }}
+      >
+        Export
+      </Button>
       <div ref={mapContainer} className="map-container">
         <Space direction="vertical" className="absolute z-40 w-69 left-0">
           <Typography className="bg-sky-950 pt-2 pb-2 pl-2 pr-2 rounded-lg text-white">

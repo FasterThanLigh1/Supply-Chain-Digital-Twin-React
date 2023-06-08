@@ -63,42 +63,6 @@ function SimulationPage() {
       exit={{ opacity: 1 }}
       transition={{ duration: 0.75, ease: "easeOut" }}
     >
-      {/* <Layout
-        style={{
-          minHeight: "100vh",
-        }}
-      >
-        <CustomSider />
-        <Layout className="site-layout">
-          <Content
-            style={{
-              textAlign: "center",
-              height: 480,
-              wdith: 1100,
-            }}
-          >
-            <div
-              style={{
-                background: colorBgContainer,
-              }}
-            >
-              <Mapbox graph={CURRENT_GRAPH} />
-            </div>
-          </Content>
-          <Footer
-            style={{
-              textAlign: "center",
-              height: 480,
-            }}
-          >
-            <div className="customer-footer">
-              <BpmnFooter />
-              <Button onClick={testSubmit}>Yes</Button>
-            </div>
-          </Footer>
-        </Layout>
-        <Inspector />
-      </Layout> */}
       <Layout className="layout-default layout-signin">
         <Content
           style={{

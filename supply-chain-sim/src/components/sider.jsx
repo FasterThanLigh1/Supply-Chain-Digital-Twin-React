@@ -11,6 +11,7 @@ import { useState } from "react";
 import { CURRENT_GRAPH, CURRENT_SIMULATION_DATA } from "../globalVariable";
 import { useDispatch, useSelector } from "react-redux";
 import { setChosen } from "../features/chosenSlice";
+import _ from "lodash";
 
 const { Sider } = Layout;
 function getItem(label, key, icon, children) {

@@ -30,6 +30,7 @@ import {
   selectId,
 } from "../features/chosenSlice";
 import { Event, Gateway, Activity, Transportation } from "../constants/class";
+import _ from "lodash";
 
 const data = [
   {
@@ -110,9 +111,11 @@ function Inspector() {
     );
     CURRENT_SIMULATION_DATA.currentAgent.customerDemand.push({
       demand: tempDest.demand,
-      transport: transportation,
+      transport: _.cloneDeep(transportation),
     });
-    CURRENT_SIMULATION_DATA.currentAgent.transport.push(transportation);
+    CURRENT_SIMULATION_DATA.currentAgent.transport.push(
+      _.cloneDeep(transportation)
+    );
     console.log("After update: ", CURRENT_SIMULATION_DATA.currentAgent);
   };
 
