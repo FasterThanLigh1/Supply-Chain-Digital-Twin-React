@@ -33,6 +33,7 @@ import BpmnFooter from "../components/bpmnFooter";
 import Axios from "axios";
 import { MAIN_COLOR } from "../constants";
 import InventoryPanel from "../components/inventory";
+import ContextMenu from "../components/contextMenu";
 
 const items2 = [UserOutlined, LaptopOutlined, NotificationOutlined].map(
   (icon, index) => {
@@ -55,6 +56,16 @@ const items2 = [UserOutlined, LaptopOutlined, NotificationOutlined].map(
 function SimulationPage() {
   const dispatch = useDispatch();
   const colorBgContainer = MAIN_COLOR;
+
+  /* useEffect(() => {
+    document.addEventListener("contextmenu", (event) => {
+      event.preventDefault();
+      const xPos = event.pageX + "px";
+      const yPos = event.pageY + "px";
+      //
+    });
+  }); */
+
   return (
     <motion.div
       className="text-center"

@@ -8,6 +8,7 @@ class Node {
     this.id = id;
     this.data = data;
     this.adjacent = [];
+    this.parent = [];
   }
 }
 class Graph {
@@ -27,6 +28,34 @@ class Graph {
     const temp1 = this.AdjList.find((e) => e.id === v);
     const temp2 = this.AdjList.find((e) => e.id === w);
     temp1.adjacent.push(temp2);
+    temp2.parent.push(temp1);
+  }
+  duplicateNode(id) {
+    //Duplicate the adjList and the parent
+    for (let i = 0; i < this.AdjList.length; i++) {
+      if (this.AdjList[i].id == id) {
+        const duplicateNode = new Node(
+          this.AdjList.length,
+          _.cloneDeep(this.AdjList[i].data)
+        );
+        duplicateNode.parent = this.AdjList[i].parent;
+        duplicateNode.adjacent = this.AdjList[i].adjacent;
+        duplicateNode.data.name = this.AdjList[i].data.name + duplicateNode.id;
+        console.log("Duplicate:", duplicateNode);
+        //Add node to adjList of parents
+        for (let j = 0; j < duplicateNode.parent.length; j++) {
+          duplicateNode.parent[j].adjacent.push(duplicateNode);
+        }
+        //Clone deep taskList and startEvent
+        duplicateNode.data.taskList = _.cloneDeep(
+          this.AdjList[i].data.taskList
+        );
+        duplicateNode.data.startEvent = duplicateNode.data.taskList[0];
+        this.addVertex(duplicateNode);
+        console.log("Graph after duplicate: ", CURRENT_GRAPH);
+        return;
+      }
+    }
   }
   getLength() {
     return this.AdjList.length;

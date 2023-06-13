@@ -2,7 +2,12 @@ import React from "react";
 import { useEffect, useRef, useState } from "react";
 import { Button, Typography, Modal, DatePicker, Space, Upload } from "antd";
 import mapboxgl from "mapbox-gl"; // eslint-disable-line import/no-webpack-loader-syntax
-import { AGENT_TYPE, MESSAGE_TYPE, mapaboxAcessToken } from "../constants";
+import {
+  AGENT_TYPE,
+  MAIN_COLOR,
+  MESSAGE_TYPE,
+  mapaboxAcessToken,
+} from "../constants";
 import {
   CURRENT_PARTICIPANTS_DATA,
   CURRENT_SIMULATION_DATA,
@@ -13,7 +18,12 @@ import * as turf from "@turf/turf";
 import carImage from "../../public/Image/truck.png";
 import { ACTIVE_MARKERS, ACTIVE_ROUTE } from "../constants";
 import { useDispatch, useSelector } from "react-redux";
-import { setState, selectState } from "../features/stateSlice";
+import {
+  setState,
+  selectState,
+  setGraphChanged,
+  selectGraphChanged,
+} from "../features/stateSlice";
 import { UseInterval } from "../ultils/CustomHooks";
 import dayjs from "dayjs";
 import {
@@ -30,6 +40,7 @@ import { setCurrentDate, selectCurrentDate } from "../features/dateSlice";
 import Axios from "axios";
 import QueryString from "qs";
 import { ExportObject } from "../constants/class";
+import { selectNodeId } from "../features/chosenSlice";
 
 mapboxgl.accessToken = mapaboxAcessToken;
 const { RangePicker } = DatePicker;
@@ -53,6 +64,8 @@ function Mapbox({ graph }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const state = useSelector(selectState);
+  const thisNodeId = useSelector(selectNodeId);
+  const thisGraphChanged = useSelector(selectGraphChanged);
   const currentDate = useSelector(selectCurrentDate);
 
   const dispatch = useDispatch();
@@ -119,15 +132,22 @@ function Mapbox({ graph }) {
       zoom: zoom,
       includeGeometry: true,
     });
+    CURRENT_MAP.current = map.current;
+
+    for (let i = 0; i < graph.getLength(); i++) {
+      ACTIVE_MARKERS.length = 0;
+      //console.log(graph);
+      initMarker(graph.AdjList[i].data);
+    }
+  });
+
+  useEffect(() => {
+    if (!map.current) return;
     for (let i = 0; i < graph.getLength(); i++) {
       //console.log(graph);
       initMarker(graph.AdjList[i].data);
     }
-    map.current.on("click", (event) => {
-      //console.log("click");
-    });
-    CURRENT_MAP.current = map.current;
-  });
+  }, [thisGraphChanged]);
 
   useEffect(() => {
     if (!map.current) return; // wait for map to initialize
@@ -255,8 +275,9 @@ function Mapbox({ graph }) {
 
   const updateStatistic = (obj) => {
     console.log("A new day");
+    const newId = obj.name + obj.id;
     Axios.post("http://localhost:8080/insert_statistic", {
-      participantKey: obj.id,
+      participantKey: newId,
       simulationKey: CURRENT_SIMULATION_DATA.currentSimulationId,
       data: obj.data,
       date: curDate,
@@ -376,9 +397,11 @@ function Mapbox({ graph }) {
 
       //TODO: INSERT PARTICIPANTS
       for (let i = 0; i < CURRENT_GRAPH.AdjList.length; i++) {
+        const newId =
+          CURRENT_GRAPH.AdjList[i].data.name + CURRENT_GRAPH.AdjList[i].data.id;
         CURRENT_PARTICIPANTS_DATA.participants.push({
           name: CURRENT_GRAPH.AdjList[i].data.name,
-          id: CURRENT_GRAPH.AdjList[i].data.id,
+          id: newId,
         });
       }
       Axios.post("http://localhost:8080/new_participants", {
@@ -484,25 +507,30 @@ function Mapbox({ graph }) {
     }
   };
 
+  const onDuplicate = () => {
+    console.log("Duplicate: ", thisNodeId);
+    CURRENT_GRAPH.duplicateNode(thisNodeId);
+    dispatch(setGraphChanged(thisGraphChanged + 1));
+  };
+
   return (
     <div>
       <Button onClick={onClickSimulate}>Add route</Button>
-      <Button onClick={run}>Run</Button>
-      <Button
-        onClick={() => {
-          abstractMove(CURRENT_GRAPH.AdjList[0].data);
-        }}
-      >
-        Test{" "}
-      </Button>
-      <Button onClick={simulation}>Next</Button>
       <Button
         onClick={() => {
           setIsModalOpen(true);
         }}
       >
-        Run Sim
+        Run
       </Button>
+      {/* <Button
+        onClick={() => {
+          abstractMove(CURRENT_GRAPH.AdjList[0].data);
+        }}
+      >
+        Test{" "}
+      </Button> */}
+      <Button onClick={simulation}>Next</Button>
       <Upload
         {...uploadProps}
         beforeUpload={(file) => {
@@ -525,6 +553,13 @@ function Mapbox({ graph }) {
       >
         Export
       </Button>
+      <Button
+        onClick={() => {
+          onDuplicate();
+        }}
+      >
+        Duplicate
+      </Button>
       <div ref={mapContainer} className="map-container">
         <Space direction="vertical" className="absolute z-40 w-69 left-0">
           <Typography className="bg-sky-950 pt-2 pb-2 pl-2 pr-2 rounded-lg text-white">
@@ -544,6 +579,14 @@ function Mapbox({ graph }) {
           setIsModalOpen(false);
         }}
         okText="Run"
+        okButtonProps={{
+          disabled: false,
+          style: { backgroundColor: "coral" },
+          onClick: () => {
+            setIsModalOpen(false);
+            run();
+          },
+        }}
       >
         <Space direction="vertical" size={10}>
           <Space direction="horizontal" size={5}>
@@ -552,7 +595,7 @@ function Mapbox({ graph }) {
               showTime={{
                 format: "HH:mm",
               }}
-              onChange={onChangeDate}
+              onOk={onChangeDate}
               format="YYYY-MM-DD HH:mm"
             />
           </Space>

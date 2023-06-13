@@ -3,6 +3,7 @@ import { createSlice } from "@reduxjs/toolkit";
 const initialState = {
   isRunningSimulation: false,
   currentTaskId: null,
+  graphChanged: 0,
 };
 
 export const stateSlice = createSlice({
@@ -15,12 +16,16 @@ export const stateSlice = createSlice({
     setTaskId: (state, action) => {
       state.currentTaskId = action.payload;
     },
+    setGraphChanged: (state, action) => {
+      state.graphChanged = action.payload;
+    },
   },
 });
 
 // Action creators are generated for each case reducer function
-export const { setState } = stateSlice.actions;
+export const { setState, setGraphChanged, setTaskId } = stateSlice.actions;
 export const selectState = (state) => state.state.isRunningSimulation;
-export const selectTaskId = (state) => state.currentTaskId;
+export const selectTaskId = (state) => state.state.currentTaskId;
+export const selectGraphChanged = (state) => state.state.graphChanged;
 
 export default stateSlice.reducer;
