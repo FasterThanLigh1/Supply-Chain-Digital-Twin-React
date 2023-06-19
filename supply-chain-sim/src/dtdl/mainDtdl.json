@@ -1,0 +1,28 @@
+{
+  "@id": "dtmi:dtdl:Supplier;1",
+  "@type": "Interface",
+  "displayName": "Supplier",
+  "contents": [
+    {
+      "@type": "Component",
+      "name": "Supplier",
+      "schema": "dtmi:dtdl:Supplier;1"
+    },
+    {
+      "@type": "Component",
+      "name": "Distributor",
+      "schema": "dtmi:dtdl:Distributor;1"
+    },
+    {
+      "@type": "Component",
+      "name": "Customer1",
+      "schema": "dtmi:dtdl:Customer1;1"
+    },
+    {
+      "@type": "Component",
+      "name": "Customer2",
+      "schema": "dtmi:dtdl:Customer2;1"
+    }
+  ],
+  "@context": "dtmi:dtdl:context;2"
+}

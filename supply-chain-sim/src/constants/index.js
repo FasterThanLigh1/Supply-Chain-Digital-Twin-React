@@ -59,6 +59,13 @@ export const TASK_TYPE = {
   MOVE: "move",
 };
 
+export const DTDL_CONTENT_ATTRIBUTES = {
+  PROPERTY: "Property",
+  TELEMETRY: "Telemetry",
+  RELATIONSHIP: "Relationship",
+  COMPONENT: "Component",
+};
+
 export const MAIN_COLOR = "rgba(255, 255, 255, 0.2)";
 
 export const ACTIVE_MARKERS = [];

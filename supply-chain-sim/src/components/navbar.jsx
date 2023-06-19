@@ -7,12 +7,14 @@ import {
   HomeOutlined,
   NodeIndexOutlined,
   DashboardOutlined,
+  ClusterOutlined,
 } from "@ant-design/icons";
 import {
   simulationRoute,
   bpmnRoute,
   landingRoute,
   analysisRoute,
+  digitalTwinRoute,
 } from "../constants/route";
 
 const items = [
@@ -20,6 +22,11 @@ const items = [
     label: <Link to={landingRoute}>Home</Link>,
     key: "home",
     icon: <HomeOutlined />,
+  },
+  {
+    label: <Link to={digitalTwinRoute}>Digital Twin</Link>,
+    key: "twin",
+    icon: <ClusterOutlined />,
   },
   {
     label: <Link to={bpmnRoute}>Bpmn</Link>,
