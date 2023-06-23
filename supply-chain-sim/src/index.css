@@ -3020,6 +3020,11 @@ aside.ant-layout-sider.ant-layout-sider-light.sider-primary.ant-layout-sider-pri
   box-shadow: none;
 }
 
+.ant-btn-primary {
+  color: black;
+  border-color: black;
+}
+
 .ant-btn-dashed {
   color: rgba(0, 0, 0, 0.65);
 }

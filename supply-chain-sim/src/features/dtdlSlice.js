@@ -18,11 +18,16 @@ export const dtdlSlice = createSlice({
     setMainTwin: (state, action) => {
       state.mainTwin = action.payload;
     },
+    setData: (state, action) => {},
+    setChildTwinArray: (state, action) => {
+      state.childTwinArray = action.payload;
+    },
   },
 });
 
 // Action creators are generated for each case reducer function
-export const { pushChildTwin, setMainTwin } = dtdlSlice.actions;
+export const { pushChildTwin, setMainTwin, setData, setChildTwinArray } =
+  dtdlSlice.actions;
 export const selectMainTwin = (state) => state.dtdl.mainTwin;
 export const selectChildTwinArray = (state) => state.dtdl.childTwinArray;
 

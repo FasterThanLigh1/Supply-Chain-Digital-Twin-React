@@ -73,3 +73,12 @@ export const ACTIVE_ROUTE = [];
 export const CURRENT_BPMN_MODEl = {
   diagram: null,
 };
+
+export const REACT_APP_SUPABASE_URL =
+  "https://yfglzchwttkotbtjhmnl.supabase.co";
+export const REACT_APP_ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlmZ2x6Y2h3dHRrb3RidGpobW5sIiwicm9sZSI6ImFub24iLCJpYXQiOjE2ODc0MTQxMjcsImV4cCI6MjAwMjk5MDEyN30.K0EXVA8ele2aDAH5U5dUI8nw2UCkMLooAg7I4L4LlSg";
+
+export const SUPABASE_TABLE = {
+  PARTICIPANT_LIST: "participants",
+};

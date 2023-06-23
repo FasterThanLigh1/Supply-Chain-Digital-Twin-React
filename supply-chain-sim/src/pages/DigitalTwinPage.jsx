@@ -9,6 +9,7 @@ import {
 } from "../features/dtdlSlice";
 import { InboxOutlined } from "@ant-design/icons";
 import { DTDL_CONTENT_ATTRIBUTES } from "../constants";
+import _ from "lodash";
 const { Dragger } = Upload;
 
 function DigitalTwinPage() {
@@ -69,8 +70,13 @@ function DigitalTwinPage() {
   const onImport = (e) => {
     console.log(e);
     var myObject = JSON.parse(e);
-    constructData(myObject.contents);
-    dispatch(pushChildTwin(myObject));
+    const data = constructData(myObject.contents);
+    dispatch(
+      pushChildTwin({
+        schema: myObject,
+        data: data,
+      })
+    );
     console.log(myObject);
   };
 
@@ -86,23 +92,31 @@ function DigitalTwinPage() {
   }, [thisChildTwinArray]);
 
   const constructData = (schema) => {
-    console.log(
-      "[Constructing] ",
-      schema.reduce((acc, cur) => {
-        if (cur["@type"] == DTDL_CONTENT_ATTRIBUTES.PROPERTY) {
-          if (cur["schema"].hasOwnProperty("@type")) {
-            const temp = cur["schema"]["fields"].reduce(
-              (acc2, cur2) => ({ ...acc2, [cur2.name]: "default" }),
-              {}
-            );
-            return { ...acc, [cur.name]: temp };
-          } else {
-            return { ...acc, [cur.name]: "default" };
-          }
+    const constructedProperties = schema.reduce((acc, cur) => {
+      if (cur["@type"] == DTDL_CONTENT_ATTRIBUTES.PROPERTY) {
+        if (cur["schema"].hasOwnProperty("@type")) {
+          const temp = cur["schema"]["fields"].reduce(
+            (acc2, cur2) => ({ ...acc2, [cur2.name]: "default" }),
+            {}
+          );
+          return { ...acc, [cur.name]: temp };
+        } else {
+          return { ...acc, [cur.name]: "default" };
         }
-        return { ...acc };
-      }, {})
-    );
+      }
+      return { ...acc };
+    }, {});
+    return constructedProperties;
+  };
+
+  const getSchemaFromId = (childTwinArray, id) => {
+    console.log(childTwinArray);
+    for (let i = 0; i < childTwinArray.length; i++) {
+      if (childTwinArray[i].schema["@id"] == id) {
+        return childTwinArray[i];
+      }
+    }
+    return null;
   };
 
   return (
@@ -138,6 +152,17 @@ function DigitalTwinPage() {
         </Col>
       </Row>
       <RealtimeMap />
+      <Button
+        onClick={() => {
+          const temp = getSchemaFromId(
+            thisChildTwinArray,
+            "dtmi:dtdl:Customer1;1"
+          );
+          console.log("Test", temp);
+        }}
+      >
+        Test
+      </Button>
     </div>
   );
 }
