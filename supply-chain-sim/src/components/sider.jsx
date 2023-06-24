@@ -11,6 +11,8 @@ import { useState } from "react";
 import { CURRENT_GRAPH, CURRENT_SIMULATION_DATA } from "../globalVariable";
 import { useDispatch, useSelector } from "react-redux";
 import { setChosen } from "../features/chosenSlice";
+import _ from "lodash";
+import { selectGraphChanged } from "../features/stateSlice";
 
 const { Sider } = Layout;
 function getItem(label, key, icon, children) {
@@ -38,6 +40,7 @@ export const items = [
 
 function CustomSider(colorBgContainer) {
   const dispatch = useDispatch();
+  const thisGraphChanged = useSelector(selectGraphChanged);
   const [menuItem, setMenuItem] = useState(items);
   const [collapsed, setCollapsed] = useState(false);
 
@@ -50,10 +53,12 @@ function CustomSider(colorBgContainer) {
       };
     });
     setMenuItem(newItems);
-  }, []);
+    console.log("Graph changed");
+  }, [thisGraphChanged]);
 
   const onClickItem = (e) => {
     for (let i = 0; i < CURRENT_GRAPH.getLength(); i++) {
+      console.log("KEY: ", e.key);
       if (CURRENT_GRAPH.AdjList[i].id == e.key) {
         console.log(CURRENT_GRAPH.AdjList[i].data);
         dispatch(
@@ -65,6 +70,7 @@ function CustomSider(colorBgContainer) {
             demand: CURRENT_GRAPH.AdjList[i].data.demand,
             type: CURRENT_GRAPH.AdjList[i].data.type,
             id: CURRENT_GRAPH.AdjList[i].data.id,
+            nodeId: CURRENT_GRAPH.AdjList[i].id,
           })
         );
         CURRENT_SIMULATION_DATA.currentAgent = CURRENT_GRAPH.AdjList[i].data;

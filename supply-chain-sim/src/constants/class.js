@@ -1,4 +1,5 @@
 import { RUN_STATE } from ".";
+import { CURRENT_GRAPH } from "../globalVariable";
 import { runShipment } from "./callback";
 import _ from "lodash";
 
@@ -7,6 +8,7 @@ class Node {
     this.id = id;
     this.data = data;
     this.adjacent = [];
+    this.parent = [];
   }
 }
 class Graph {
@@ -26,6 +28,34 @@ class Graph {
     const temp1 = this.AdjList.find((e) => e.id === v);
     const temp2 = this.AdjList.find((e) => e.id === w);
     temp1.adjacent.push(temp2);
+    temp2.parent.push(temp1);
+  }
+  duplicateNode(id) {
+    //Duplicate the adjList and the parent
+    for (let i = 0; i < this.AdjList.length; i++) {
+      if (this.AdjList[i].id == id) {
+        const duplicateNode = new Node(
+          this.AdjList.length,
+          _.cloneDeep(this.AdjList[i].data)
+        );
+        duplicateNode.parent = this.AdjList[i].parent;
+        duplicateNode.adjacent = this.AdjList[i].adjacent;
+        duplicateNode.data.name = this.AdjList[i].data.name + duplicateNode.id;
+        console.log("Duplicate:", duplicateNode);
+        //Add node to adjList of parents
+        for (let j = 0; j < duplicateNode.parent.length; j++) {
+          duplicateNode.parent[j].adjacent.push(duplicateNode);
+        }
+        //Clone deep taskList and startEvent
+        duplicateNode.data.taskList = _.cloneDeep(
+          this.AdjList[i].data.taskList
+        );
+        duplicateNode.data.startEvent = duplicateNode.data.taskList[0];
+        this.addVertex(duplicateNode);
+        console.log("Graph after duplicate: ", CURRENT_GRAPH);
+        return;
+      }
+    }
   }
   getLength() {
     return this.AdjList.length;
@@ -45,7 +75,7 @@ class Agent {
       latitude: latitude,
       longitude: longitude,
     };
-    this.inventory = inventory;
+    this.inventory = [];
     this.startEvent = startEvent;
     this.processes = [];
     this.type = type;
@@ -79,10 +109,66 @@ class Agent {
     this.inventory = temp;
     console.log("After:", this.inventory);
   }
+  abstractAddInventory(item) {
+    console.log("Add item: ", item);
+    for (let i = 0; i < item.length; i++) {
+      for (let j = 0; j < this.inventory.length; j++) {
+        if (item[i].name == this.inventory[j].name) {
+          this.inventory[j].quantity += item[i].quantity;
+        }
+      }
+    }
+    console.log("After:", this.inventory);
+  }
+  abstractRemoveInventory(demand) {
+    const returnDeliver = [];
+    for (let i = 0; i < demand.length; i++) {
+      for (let j = 0; j < this.inventory.length; j++) {
+        if (this.inventory[j].name == demand[i].name) {
+          if (this.inventory[j].quantity == 0) {
+            alert(`stock out for ${this.inventory[j].name}`);
+            returnDeliver.push({
+              name: demand[i].name,
+              quantity: 0,
+            });
+          } else {
+            const temp = this.inventory[j].quantity - demand[i].quantity;
+            if (temp < 0) {
+              console.log(
+                "Not enough in inventory and added to backlog " + this.name
+              );
+              const itemToAdd = {
+                name: demand[i].name,
+                quantity: demand[i].quantity,
+              };
+              this.backOrder.push(itemToAdd);
+              returnDeliver.push({
+                name: demand[i].name,
+                quantity: 0,
+              });
+            } else {
+              //this.inventory[j].quantity = temp;
+              returnDeliver.push(demand[i]);
+            }
+          }
+        }
+      }
+    }
+    console.log("After:", this.inventory);
+    return returnDeliver;
+  }
   removeInventory(item, quantity) {
-    console.log("Before:", this.inventory, " and ", item);
+    console.log(
+      "Before:",
+      this.inventory,
+      " and ",
+      item,
+      "and quantity: ",
+      quantity
+    );
     for (let i = 0; i < this.inventory.length; i++) {
-      if (this.inventory[i].name === item.name) {
+      console.log(this.inventory[i].name, item.name);
+      if (this.inventory[i].name == item.name) {
         if (this.inventory[i].quantity == 0) {
           alert(`stock out for ${this.inventory[i].name}`);
           return {
@@ -197,6 +283,33 @@ class Agent {
   calcEverything(obj) {
     this.calcTotalInventory(obj);
     this.calcBackOrder(obj);
+  }
+  onImport(data) {
+    this.location = data.location;
+    this.inventory = data.inventory;
+    this.demand = data.demand;
+  }
+  getDemand() {
+    for (let i = 0; i < CURRENT_GRAPH.AdjList.length; i++) {
+      if (CURRENT_GRAPH.AdjList[i].data.id == this.id) {
+        console.log("Correct: ", CURRENT_GRAPH.AdjList[i]);
+        for (let j = 0; j < CURRENT_GRAPH.AdjList[i].adjacent.length; j++) {
+          this.customerDemand.push({
+            target: CURRENT_GRAPH.AdjList[i].adjacent[j].data,
+            demand: CURRENT_GRAPH.AdjList[i].adjacent[j].data.demand,
+          });
+        }
+        console.log("Demand: ", this.customerDemand);
+        return this.customerDemand;
+      }
+    }
+  }
+  getCustomer() {
+    for (let i = 0; i < CURRENT_GRAPH.AdjList.length; i++) {
+      if (CURRENT_GRAPH.AdjList[i].data.id == this.id) {
+        return CURRENT_GRAPH.AdjList[i].adjacent;
+      }
+    }
   }
 }
 class BpmnNode {
@@ -325,4 +438,30 @@ class Transportation {
   }
 }
 
-export { Node, Graph, Agent, Event, Activity, Gateway, Transportation };
+class ExportObject {
+  constructor(obj) {
+    this.name = obj.name;
+    this.type = obj.type;
+    this.location = {
+      latitude: obj.location.latitude,
+      longitude: obj.location.longitude,
+    };
+    this.inventory = obj.inventory;
+    this.demand = obj.demand;
+  }
+
+  ToJSON() {
+    return JSON.stringify(this);
+  }
+}
+
+export {
+  Node,
+  Graph,
+  Agent,
+  Event,
+  Activity,
+  Gateway,
+  Transportation,
+  ExportObject,
+};

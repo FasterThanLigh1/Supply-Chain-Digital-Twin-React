@@ -18,6 +18,7 @@ import {
 import {
   RESET_IMPORT,
   constructGraph,
+  constructThrowEvent,
   constructVertices,
   getEventStartType,
 } from "../constants/callback";
@@ -192,6 +193,7 @@ function BpmnModeler(url) {
                     prev.next = immediateEvent;
                     prev = prev.next;
 
+                    tempAgent.taskList.push(immediateEvent);
                     CURRENT_PARTICIPANTS_DATA.referenceEvents.push({
                       event: immediateEvent,
                       agent: tempAgent,
@@ -215,8 +217,9 @@ function BpmnModeler(url) {
                 });
               }
             });
-
+            //After looping through BPMN task
             constructGraph(VERTICES);
+            constructThrowEvent();
           }
         });
       }
@@ -289,8 +292,7 @@ function BpmnModeler(url) {
             console.log(moddle.fromXML(e.target.result));
             onImport(e.target.result);
           };
-          reader.readAsText(file);
-
+          const temp = reader.readAsText(file);
           // Prevent upload
           return false;
         }}

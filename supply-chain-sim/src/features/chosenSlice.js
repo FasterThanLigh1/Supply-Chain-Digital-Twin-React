@@ -8,6 +8,7 @@ const initialState = {
   inventory: [],
   demand: [],
   type: "default",
+  nodeId: -1,
 };
 
 export const chosenSlice = createSlice({
@@ -23,6 +24,7 @@ export const chosenSlice = createSlice({
       state.demand = action.payload.demand;
       state.type = action.payload.type;
       state.id = action.payload.id;
+      state.nodeId = action.payload.nodeId;
     },
     setLongitude: (state, action) => {
       state.longitude = action.payload;
@@ -55,5 +57,6 @@ export const selectInventory = (state) => state.chosen.inventory;
 export const selectDemand = (state) => state.chosen.demand;
 export const selectType = (state) => state.chosen.type;
 export const selectId = (state) => state.chosen.id;
+export const selectNodeId = (state) => state.chosen.nodeId;
 
 export default chosenSlice.reducer;

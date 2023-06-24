@@ -33,10 +33,21 @@ import BpmnFooter from "../components/bpmnFooter";
 import Axios from "axios";
 import { MAIN_COLOR } from "../constants";
 import InventoryPanel from "../components/inventory";
+import ContextMenu from "../components/contextMenu";
 
 function SimulationPage() {
   const dispatch = useDispatch();
   const colorBgContainer = MAIN_COLOR;
+
+  /* useEffect(() => {
+    document.addEventListener("contextmenu", (event) => {
+      event.preventDefault();
+      const xPos = event.pageX + "px";
+      const yPos = event.pageY + "px";
+      //
+    });
+  }); */
+
   return (
     <motion.div
       className="text-center"
@@ -45,42 +56,6 @@ function SimulationPage() {
       exit={{ opacity: 1 }}
       transition={{ duration: 0.75, ease: "easeOut" }}
     >
-      {/* <Layout
-        style={{
-          minHeight: "100vh",
-        }}
-      >
-        <CustomSider />
-        <Layout className="site-layout">
-          <Content
-            style={{
-              textAlign: "center",
-              height: 480,
-              wdith: 1100,
-            }}
-          >
-            <div
-              style={{
-                background: colorBgContainer,
-              }}
-            >
-              <Mapbox graph={CURRENT_GRAPH} />
-            </div>
-          </Content>
-          <Footer
-            style={{
-              textAlign: "center",
-              height: 480,
-            }}
-          >
-            <div className="customer-footer">
-              <BpmnFooter />
-              <Button onClick={testSubmit}>Yes</Button>
-            </div>
-          </Footer>
-        </Layout>
-        <Inspector />
-      </Layout> */}
       <Layout className="layout-default layout-signin">
         <Content
           style={{
