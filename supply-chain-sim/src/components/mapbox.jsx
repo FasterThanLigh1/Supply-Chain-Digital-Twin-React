@@ -442,7 +442,7 @@ function Mapbox({ graph }) {
     setIsModalOpen(false);
   };
 
-  const onChangeDate = (value, dateString) => {
+  const onChangeDate = (value) => {
     //console.log("Selected Time: ", value);
     SetDate(value[0]);
     setEndDate(value[1]);
@@ -490,8 +490,10 @@ function Mapbox({ graph }) {
         console.log(info.file, info.fileList);
       }
       if (info.file.status === "done") {
+        // eslint-disable-next-line no-undef
         message.success(`${info.file.name} file uploaded successfully`);
       } else if (info.file.status === "error") {
+        // eslint-disable-next-line no-undef
         message.error(`${info.file.name} file upload failed.`);
       }
     },

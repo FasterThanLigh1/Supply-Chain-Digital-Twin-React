@@ -1,13 +1,16 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import supplyChainIcon from "../../public/Image/supply-chain.png";
-import { Menu } from "antd";
+import { Menu, Space, Dropdown, Button } from "antd";
 import {
   BuildOutlined,
   HomeOutlined,
   NodeIndexOutlined,
   DashboardOutlined,
   ClusterOutlined,
+  UserOutlined,
+  SettingOutlined,
+  LogoutOutlined,
 } from "@ant-design/icons";
 import {
   simulationRoute,
@@ -16,45 +19,68 @@ import {
   analysisRoute,
   digitalTwinRoute,
 } from "../constants/route";
+import supabase from "../config/supabaseClient";
+import { useDispatch } from "react-redux";
+import { setCurrentUser } from "../features/userSlice";
 
-const items = [
+const iconProps = {
+  size: "100%",
+};
+
+const dropDownItems = [
   {
-    label: <Link to={landingRoute}>Home</Link>,
-    key: "home",
-    icon: <HomeOutlined />,
-  },
-  {
-    label: <Link to={digitalTwinRoute}>Digital Twin</Link>,
-    key: "twin",
-    icon: <ClusterOutlined />,
-  },
-  {
-    label: <Link to={bpmnRoute}>Bpmn</Link>,
-    key: "bpmn",
-    icon: <BuildOutlined />,
-  },
-  {
-    label: <Link to={simulationRoute}>Simulation</Link>,
-    key: "simulation",
-    icon: <NodeIndexOutlined />,
-  },
-  {
-    label: <Link to={analysisRoute}>Analysis</Link>,
-    key: "analysis",
-    icon: <DashboardOutlined />,
+    key: "1",
+    label: <div>Yes</div>,
   },
 ];
 
 const Navigation = () => {
   const [current, setCurrent] = useState("home");
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
   const onClick = (e) => {
     console.log("click ", e);
     setCurrent(e.key);
   };
 
+  async function signOutUser() {
+    const { error } = await supabase.auth.signOut();
+    dispatch(setCurrentUser(null));
+    navigate(landingRoute);
+  }
+
+  const items = [
+    {
+      label: <Link to={digitalTwinRoute}>Digital Twin</Link>,
+      key: "twin",
+      icon: <ClusterOutlined style={{ fontSize: iconProps.size }} />,
+    },
+    {
+      label: <Link to={bpmnRoute}>Bpmn</Link>,
+      key: "bpmn",
+      icon: <BuildOutlined style={{ fontSize: iconProps.size }} />,
+    },
+    {
+      label: <Link to={simulationRoute}>Simulation</Link>,
+      key: "simulation",
+      icon: <NodeIndexOutlined style={{ fontSize: iconProps.size }} />,
+    },
+    {
+      label: <Link to={analysisRoute}>Analysis</Link>,
+      key: "analysis",
+      icon: <DashboardOutlined style={{ fontSize: iconProps.size }} />,
+    },
+    {
+      label: <a onClick={() => signOutUser()} />,
+      key: "logout",
+      icon: <LogoutOutlined style={{ fontSize: iconProps.size }} />,
+    },
+  ];
+
   return (
     <nav className="sticky top-0 bg-white z-50 ">
-      <div className="flex flex-wrap items-center justify-between p-4 ">
+      <div className="flex flex-nowrap items-center justify-between p-4 ">
         <a href="https://flowbite.com/" className="flex items-center">
           <img src={supplyChainIcon} className="h-8 mr-3" alt="Flowbite Logo" />
           <span className="self-center text-2xl font-semibold whitespace-nowrap dark:text-white">
@@ -91,44 +117,6 @@ const Navigation = () => {
           onClick={onClick}
           disabledOverflow
         />
-        {/*
-        <div className="hidden w-full md:block md:w-auto" id="navbar-default">
-          <ul className="font-medium flex flex-col p-4 md:p-0 mt-4 border border-gray-100 rounded-lg bg-gray-50 md:flex-row md:space-x-8 md:mt-0 md:border-0 md:bg-white dark:bg-gray-800 md:dark:bg-gray-900 dark:border-gray-700">
-            <li>
-              <div
-                href="#"
-                className="block py-2 pl-3 pr-4 text-white bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:p-0 dark:text-white md:dark:text-blue-500"
-                aria-current="page"
-              >
-                <Link to={landingRoute}>Home</Link>
-              </div>
-            </li>
-            <li>
-              <div
-                href="#"
-                className="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent"
-              >
-                c
-              </div>
-            </li>
-            <li>
-              <div
-                href="#"
-                className="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent"
-              >
-                <Link to={simulationRoute}>Simulation</Link>
-              </div>
-            </li>
-            <li>
-              <div
-                href="#"
-                className="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent"
-              >
-                <Link to={analysisRoute}>Analysis</Link>
-              </div>
-            </li>
-          </ul>
-        </div> */}
       </div>
     </nav>
   );
