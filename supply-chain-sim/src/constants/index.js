@@ -78,6 +78,7 @@ export const DTDL_MARKER_TYPE = {
   SUPPLIER: "dtmi:dtdl:Supplier",
   DISTRIBUTOR: "dtmi:dtdl:Distributor",
   CUSTOMER: "dtmi:dtdl:Customer",
+  FARM: "dtmi:dtdl:Farm",
 };
 
 export const REACT_APP_SUPABASE_URL =
@@ -97,6 +98,9 @@ export const SUPABASE_TABLE = {
   CARGO_PRODUCT_DATA: "cargo_product_data",
   INVENTORY: "inventory",
   WARNING_LIST: "warning",
+  IOT_DEVICES: "iot_devices",
+  LIVE_TELEMETRY: "live_telemetry",
+  LIVE_PROCESS: "live_process",
   VIEW: {
     GET_DATA_ORDER_BY_DATE: "get_participants_data_order_by_date",
   },
@@ -105,10 +109,21 @@ export const SUPABASE_TABLE = {
     ONGOING: "ongoing",
     FAIL: "fail",
   },
+  PROCESS_STATUS: {
+    ACTIVE: "active",
+    IDLE: "idle",
+  },
 };
 
 //SUPABASE VARIABLES
 export const SUPABASE_DATA = {
   ACTIVE_LIVE_TRUCK_MARKERS: [],
   ACTIVE_LIVE_PARTICIPANTS: [],
+};
+
+//REALTIME MAP UI DATA
+export const UI_DATA = {
+  SELECT_DEVICE_ID: null,
+  SELECT_PARTICIPANT_ID: null,
+  SELECT_BPMN_TASK: [],
 };

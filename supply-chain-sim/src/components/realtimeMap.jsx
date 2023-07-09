@@ -6,6 +6,8 @@ import {
   DTDL_MARKER_TYPE,
   SUPABASE_TABLE,
   mapaboxAcessToken,
+  BPMN_TYPE,
+  UI_DATA,
 } from "../constants";
 import {
   Button,
@@ -17,6 +19,7 @@ import {
   Row,
   Table,
   Tag,
+  Tabs,
 } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 import { selectChildTwinArray, setChildTwinArray } from "../features/dtdlSlice";
@@ -27,11 +30,14 @@ import supabase from "../config/supabaseClient";
 import { selectTruckDataArray } from "../features/truckSlice";
 import { getRoute } from "../constants/callback";
 import Notification from "./notification";
-import Modeler from "bpmn-js/lib/Modeler";
+import Modeler from "bpmn-js/lib/Viewer";
+import KeyboardMoveModule from "diagram-js/lib/navigation/keyboard-move";
+import MoveCanvasModule from "diagram-js/lib/navigation/movecanvas";
+import ZoomScrollModule from "diagram-js/lib/navigation/zoomscroll";
 import "bpmn-js/dist/assets/diagram-js.css";
 import "bpmn-js/dist/assets/bpmn-font/css/bpmn-embedded.css";
 import axios from "axios";
-import { current } from "@reduxjs/toolkit";
+import BootstrapModal from "react-bootstrap/Modal";
 
 mapboxgl.accessToken = mapaboxAcessToken;
 
@@ -112,6 +118,24 @@ const columns3 = [
   },
 ];
 
+const items = [
+  {
+    key: "1",
+    label: `Tab 1`,
+    children: `Content of Tab Pane 1`,
+  },
+  {
+    key: "2",
+    label: `Tab 2`,
+    children: `Content of Tab Pane 2`,
+  },
+  {
+    key: "3",
+    label: `Tab 3`,
+    children: `Content of Tab Pane 3`,
+  },
+];
+
 function RealtimeMap() {
   const thisChildTwinArray = useSelector(selectChildTwinArray);
   const thisTruckDataArray = useSelector(selectTruckDataArray);
@@ -122,10 +146,10 @@ function RealtimeMap() {
   const map = useRef(null);
   const [api_participantList, api_setParticipantList] = useState([]);
   const [fetchError, setfetchError] = useState(null);
-  const [zoom, setZoom] = useState(5);
+  const [zoom, setZoom] = useState(9);
   const [geojsonPlaces, setGeojsonPlaces] = useState(null);
-  const [lng, setLng] = useState(-70.9);
-  const [lat, setLat] = useState(42.35);
+  const [lng, setLng] = useState(106.505);
+  const [lat, setLat] = useState(10.9374);
 
   const [salesSeries, setSalesSeries] = useState([]);
   const [salesCategories, setSalesCategories] = useState([]);
@@ -135,6 +159,7 @@ function RealtimeMap() {
   const [modalName, setModalName] = useState(null);
   const [modalId, setModalId] = useState(null);
   const [selectAddress, setSelectAddress] = useState(null);
+  const [description, setDescription] = useState(null);
   const [selectSupplier, setSelectSupplier] = useState(null);
   const [selectCustomer, setSelectCustomer] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -151,6 +176,8 @@ function RealtimeMap() {
   const [truckLatitude, setTruckLatitude] = useState(null);
   const [truckDestination, setTruckDestination] = useState(null);
   const [isTruckActive, setIsTruckActive] = useState(false);
+  const [cargoTemperature, setCargoTemperature] = useState(null);
+  const [cargoHumidity, setCargoHumidity] = useState(null);
 
   //ORDER ATTRIBUTE
   const [orderData, setOrderData] = useState([]);
@@ -167,12 +194,20 @@ function RealtimeMap() {
   //BPMN VIEW
   const [openBpmnModal, setOpenBpmnModal] = useState(false);
   const [diagram, diagramSet] = useState("");
-  const [modeling, setModeling] = useState(null);
+  const [canvas, setCanvas] = useState(null);
   const [currentModeler, modelerSet] = useState(null);
   const container = document.getElementById("container");
 
+  //UI ATTRIBUTE
+  const [selectDeviceId, setSelectDeviceId] = useState(null);
+  const [tabContent, setTabContent] = useState(null);
+  const [currentBpmnTask, setCurrentBpmnTask] = useState([]);
+
+  //BPMN UI ATTRIBUTE
+  const [openTaskModal, setOpenTaskModal] = useState(false);
+
   useEffect(() => {
-    console.log("DIAGRAM CALLED: ", diagram);
+    console.log(diagram);
     if (diagram.length === 0) {
       axios
         .get(
@@ -184,51 +219,85 @@ function RealtimeMap() {
         .catch((e) => {
           console.log(e);
         });
-
-      const modeler = new Modeler({
-        container,
-        keyboard: {
-          bindTo: document,
-        },
-      });
-      modeler
-        .importXML(diagram)
-        .then(({ warnings }) => {
-          if (warnings.length) {
-            console.log("Warnings", warnings);
-          }
-        })
-        .catch((err) => {
-          console.log("error", err);
-        });
-
-      modelerSet(modeler);
     }
 
     if (diagram.length > 0) {
-      console.log("New diagram");
-
-      axios
-        .get(
-          "https://cdn.staticaly.com/gh/bpmn-io/bpmn-js-examples/master/colors/resources/pizza-collaboration.bpmn"
-        )
-        .then((r) => {
-          diagramSet(r.data);
-        })
-        .catch((e) => {
-          console.log(e);
+      if (currentModeler == null) {
+        const modeler = new Modeler({
+          container,
+          additionalModules: [KeyboardMoveModule, MoveCanvasModule],
+          keyboard: {
+            bindTo: document,
+          },
         });
+        modelerSet(modeler);
+        /* setBusiness(modeler);
+        console.log(business); */
+        modeler.importXML(diagram, (err) => {
+          if (err) {
+          } else {
+            var elementRegistry = modeler.get("elementRegistry");
+            var canvas = modeler.get("canvas");
+            setCanvas(canvas);
+            //setCanvas(canvas);
+            console.log(elementRegistry);
+            elementRegistry.forEach(function (elem, gfx) {
+              if (elem.type === "bpmn:StartEvent") {
+                // do something with the task
+                const businessObject = elem.businessObject;
+                /* canvas.addMarker(elem.id, "highlight"); */
+                console.log("Start", elem);
+                //canvas.addMarker(elem.id, "highlight");
+              }
+            });
+            let eventBus = modeler.get("eventBus");
+            let events = [
+              "element.hover",
+              "element.out",
+              "element.click",
+              "element.dblclick",
+              "element.mousedown",
+              "element.mouseup",
+            ];
 
-      currentModeler
-        .importXML(diagram)
-        .then(({ warnings }) => {
-          if (warnings.length) {
-            console.log("Warnings", warnings);
+            events.forEach(function (event) {
+              eventBus.on(event, function (e) {
+                // e.element = the model element
+                // e.gfx = the graphical element
+                if (event === "element.click") {
+                  console.log(event, "on", e.element.id);
+                  showTaskModal(e.element.id);
+                }
+              });
+            });
           }
-        })
-        .catch((err) => {
-          console.log("error", err);
         });
+      } else {
+        currentModeler.importXML(diagram, (err) => {
+          if (err) {
+          } else {
+            console.log("[modeler", currentModeler);
+            var elementRegistry = currentModeler.get("elementRegistry");
+            //setCanvas(canvas);
+            console.log(elementRegistry);
+            const tempTask = [];
+            elementRegistry.forEach(function (elem, gfx) {
+              console.log(elem.type);
+              if (elem.type === BPMN_TYPE.TASK) {
+                // do something with the task
+                console.log("Start", elem);
+                tempTask.push(elem);
+
+                //canvas.addMarker(elem.id, "highlight");
+                //simulationSupport.triggerElement(elem.id);
+              }
+            });
+            console.log(tempTask);
+            setCurrentBpmnTask(tempTask);
+            UI_DATA.SELECT_BPMN_TASK = tempTask;
+          }
+        });
+      }
     }
   }, [diagram]);
 
@@ -248,14 +317,15 @@ function RealtimeMap() {
         setModalName(SUPABASE_DATA.ACTIVE_LIVE_PARTICIPANTS[i].name);
         setModalId(id);
         setSelectAddress(SUPABASE_DATA.ACTIVE_LIVE_PARTICIPANTS[i].address);
+        setDescription(SUPABASE_DATA.ACTIVE_LIVE_PARTICIPANTS[i].description);
         setSelectCustomer(SUPABASE_DATA.ACTIVE_LIVE_PARTICIPANTS[i].target);
         setSelectSupplier(SUPABASE_DATA.ACTIVE_LIVE_PARTICIPANTS[i].supplier);
         diagramSet(SUPABASE_DATA.ACTIVE_LIVE_PARTICIPANTS[i].bpmn);
       }
     }
 
-    api_fecthInvetoryById(id);
-    api_fecthParticipantDataById(id);
+    api_fetchInvetoryById(id);
+    api_fetchParticipantDataById(id);
   };
   const handleOk = () => {
     setIsModalOpen(false);
@@ -268,7 +338,7 @@ function RealtimeMap() {
   const showTruckModal = (id) => {
     console.log(id);
     setTruckModalOpen(true);
-    api_fecthVehicleDataById(id);
+    api_fetchVehicleDataById(id);
   };
   const handleTruckOk = () => {
     setTruckModalOpen(false);
@@ -276,6 +346,34 @@ function RealtimeMap() {
   const handleTruckCancel = () => {
     setTruckModalOpen(false);
   };
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("schema-db-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+        },
+        (payload) => console.log(payload)
+      )
+      .subscribe();
+    /* const channelVehicle = supabase
+      .channel("schema-db-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: SUPABASE_TABLE.IOT_DEVICES,
+        },
+        (payload) => {
+          console.log("Changes: ", payload.new);
+        }
+      )
+      .subscribe(); */
+  }, []);
 
   //SUPABASE FETCH
   useEffect(() => {
@@ -339,9 +437,77 @@ function RealtimeMap() {
         }
       )
       .subscribe();
+    const channelTelemetry = supabase
+      .channel("schema-db-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: SUPABASE_TABLE.LIVE_TELEMETRY,
+        },
+        (payload) => {
+          console.log("Changes: ", payload);
+          console.log("ID: ", selectDeviceId);
+          setCargoTemperature(payload.new.temperature);
+          setCargoHumidity(payload.new.humidity);
+          if (payload.new.device_id == selectDeviceId) {
+          }
+        }
+      )
+      .subscribe();
+    const channelLiveProcess = supabase
+      .channel("schema-db-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: SUPABASE_TABLE.LIVE_PROCESS,
+        },
+        (payload) => {
+          console.log("Changes: ", payload);
+          api_fetchBpmnProcessById(UI_DATA.SELECT_PARTICIPANT_ID);
+          console.log(UI_DATA.SELECT_BPMN_TASK);
+          /* for (let i = 0; i < UI_DATA.SELECT_BPMN_TASK.length; i++) {
+            canvas.removeMarker(
+              UI_DATA.SELECT_BPMN_TASK[i].id,
+              "highlight-idle"
+            );
+            canvas.removeMarker(
+              UI_DATA.SELECT_BPMN_TASK[i].id,
+              "highlight-active"
+            );
+          } */
+          for (let i = 0; i < currentBpmnTask.length; i++) {
+            if (currentBpmnTask[i].id == payload.new.id) {
+              console.log(currentBpmnTask[i]);
+              //REMOVE OLD MARKER
+              /* if (payload.old.status == SUPABASE_TABLE.PROCESS_STATUS.ACTIVE) {
+                canvas.removeMarker(payload.new.id, "highlight-active");
+              } else if (
+                payload.old.status == SUPABASE_TABLE.PROCESS_STATUS.IDLE
+              ) {
+                canvas.removeMarker(payload.new.id, "highlight-idle");
+              } */
+              //ADD NEW MARKER
+              if (payload.new.status == SUPABASE_TABLE.PROCESS_STATUS.ACTIVE) {
+                console.log("ACTIVE");
+                canvas.addMarker(payload.new.id, "highlight-active");
+              } else if (
+                payload.new.status == SUPABASE_TABLE.PROCESS_STATUS.IDLE
+              ) {
+                console.log("IDLE");
+                canvas.addMarker(payload.new.id, "highlight-idle");
+              }
+            }
+          }
+        }
+      )
+      .subscribe();
 
     api_fetchParticipantList();
-    api_fecthProducData();
+    api_fetchProducData();
   }, []);
 
   //FECTH TRANSPORTATION DATA
@@ -357,12 +523,12 @@ function RealtimeMap() {
       setOrderData(data);
       setfetchError(null);
 
-      api_fecthVehicleData();
+      api_fetchVehicleData();
     }
   };
 
   //FECTH VEHICLE DATA
-  const api_fecthVehicleData = async () => {
+  const api_fetchVehicleData = async () => {
     const { data, error } = await supabase
       .from(SUPABASE_TABLE.VEHICLE)
       .select();
@@ -373,23 +539,15 @@ function RealtimeMap() {
       console.log("VEHICLE: ", data);
 
       setTruckData(data);
-      setTruckId(data[0].id);
-      setTruckName(data[0].name);
-      setTrucklMaxVelocity(data[0].velocity);
-      setTruckWeight(data[0].weight);
-      setTruckMaxCargo(data[0].max_cargo);
-      setTruckType(data[0].type);
-      setTruckLongitude(data[0].longitude);
-      setTruckLatitude(data[0].latitude);
-      setTruckDestination(data[0].current_destination);
-      setIsTruckActive(data[0].is_active);
+
+      //api_fecthLatestTelemetry(data[0].iot_device_id);
 
       setfetchError(null);
     }
   };
 
   //FECTH PRODUCT DATA
-  const api_fecthProducData = async () => {
+  const api_fetchProducData = async () => {
     console.log("fecth product");
     const { data, error } = await supabase
       .from(SUPABASE_TABLE.PRODUCT)
@@ -402,12 +560,12 @@ function RealtimeMap() {
       setProductData(data);
       setfetchError(null);
 
-      api_fecthWarningList();
+      api_fetchWarningList();
     }
   };
 
   //FECTH CARGO DATA BY ID
-  const api_fecthCargoData = async (id) => {
+  const api_fetchCargoData = async (id) => {
     const { data, error } = await supabase
       .from(SUPABASE_TABLE.CARGO_DATA)
       .select()
@@ -417,12 +575,12 @@ function RealtimeMap() {
       console.log(error);
     } else {
       console.log("CARGO DATA: ", data);
-      api_fectchCargoProductData(data[0].cargo_product_id);
+      api_fetchCargoProductData(data[0].cargo_product_id);
       setfetchError(null);
     }
   };
 
-  const api_fectchCargoProductData = async (arrayId) => {
+  const api_fetchCargoProductData = async (arrayId) => {
     const { data, error } = await supabase
       .from(SUPABASE_TABLE.CARGO_PRODUCT_DATA)
       .select()
@@ -448,7 +606,7 @@ function RealtimeMap() {
     }
   };
 
-  const api_fecthVehicleDataById = async (id) => {
+  const api_fetchVehicleDataById = async (id) => {
     const { data, error } = await supabase
       .from(SUPABASE_TABLE.VEHICLE)
       .select()
@@ -458,12 +616,27 @@ function RealtimeMap() {
       console.log(error);
     } else {
       console.log(" SELECTED VEHICLE: ", data);
+      api_fecthLatestTelemetry(data[0].iot_device_id);
+      console.log("NEW DEVICE ID: ", data[0].iot_device_id);
+      setSelectDeviceId(data[0].iot_device_id);
+
+      setTruckId(data[0].id);
+      setTruckName(data[0].name);
+      setTrucklMaxVelocity(data[0].velocity);
+      setTruckWeight(data[0].weight);
+      setTruckMaxCargo(data[0].max_cargo);
+      setTruckType(data[0].type);
+      setTruckLongitude(data[0].longitude);
+      setTruckLatitude(data[0].latitude);
+      setTruckDestination(data[0].current_destination);
+      setIsTruckActive(data[0].is_active);
+
       setfetchError(null);
     }
   };
 
   //FETCH INVENTORY DATA
-  const api_fecthInvetoryById = async (id) => {
+  const api_fetchInvetoryById = async (id) => {
     const { data, error } = await supabase
       .from(SUPABASE_TABLE.INVENTORY)
       .select()
@@ -491,7 +664,7 @@ function RealtimeMap() {
   };
 
   //FETCH WARNING LIST
-  const api_fecthWarningList = async () => {
+  const api_fetchWarningList = async () => {
     const { data, error } = await supabase
       .from(SUPABASE_TABLE.WARNING_LIST)
       .select();
@@ -505,20 +678,8 @@ function RealtimeMap() {
     }
   };
 
-  useEffect(() => {
-    console.log(
-      "NEW TRUCK: ",
-      truckData,
-      SUPABASE_DATA.ACTIVE_LIVE_TRUCK_MARKERS
-    );
-    if (truckData.length < 1) return;
-    for (let i = 0; i < truckData.length; i++) {
-      initTruckMarker(truckData[i]);
-    }
-  }, [truckData]);
-
   //FETCH DATA BY ID
-  const api_fecthParticipantDataById = async (id) => {
+  const api_fetchParticipantDataById = async (id) => {
     const { data, error } = await supabase
       .from(SUPABASE_TABLE.VIEW.GET_DATA_ORDER_BY_DATE)
       .select();
@@ -528,6 +689,38 @@ function RealtimeMap() {
     } else {
       console.log(data);
       updateSalesChart(data);
+      setfetchError(null);
+    }
+  };
+
+  //FETCH PROCESS BY ID
+  const api_fetchBpmnProcessById = async (participantId) => {
+    const { data, error } = await supabase
+      .from(SUPABASE_TABLE.LIVE_PROCESS)
+      .select()
+      .eq("participant_id", participantId);
+    if (error) {
+      setfetchError(error);
+      console.log(error);
+    } else {
+      console.log(data);
+      for (let i = 0; i < data.length; i++) {
+        console.log(data[i].id);
+        console.log(currentBpmnTask);
+        for (let j = 0; j < currentBpmnTask.length; j++) {
+          console.log(currentBpmnTask[j].id);
+          console.log(data[i].id);
+          if (data[i].id == currentBpmnTask[j].id) {
+            if (data[i].status == SUPABASE_TABLE.PROCESS_STATUS.ACTIVE) {
+              console.log("ACTIVE");
+              canvas.addMarker(data[i].id, "highlight-active");
+            } else if (data[i].status == SUPABASE_TABLE.PROCESS_STATUS.IDLE) {
+              console.log("IDLE");
+              canvas.addMarker(data[i].id, "highlight-idle");
+            }
+          }
+        }
+      }
       setfetchError(null);
     }
   };
@@ -563,6 +756,39 @@ function RealtimeMap() {
       api_fecthTransportData();
     }
   };
+
+  //FECTH LATEST TELEMETRY DATA
+  const api_fecthLatestTelemetry = async (deviceId) => {
+    console.log(deviceId);
+    const { data, error } = await supabase
+      .from(SUPABASE_TABLE.LIVE_TELEMETRY)
+      .select()
+      .eq("device_id", deviceId)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    if (error) {
+      setfetchError(error);
+      console.log(error);
+    } else {
+      console.log("TELEMETRY", data);
+      setCargoTemperature(data[0].temperature);
+      setCargoHumidity(data[0].humidity);
+      //fecth
+    }
+  };
+
+  useEffect(() => {
+    console.log(
+      "NEW TRUCK: ",
+      truckData,
+      SUPABASE_DATA.ACTIVE_LIVE_TRUCK_MARKERS
+    );
+    if (truckData.length < 1) return;
+    for (let i = 0; i < truckData.length; i++) {
+      initTruckMarker(truckData[i]);
+    }
+  }, [truckData]);
+
   //MAP INITAILIZATION
   useEffect(() => {
     /////////////INIT MAPPPPPPPPPPPPPP/////////////
@@ -613,6 +839,7 @@ function RealtimeMap() {
   //On Login
   useEffect(() => {
     console.log("Get participant list: ", api_participantList);
+    const tempTabItems = [];
     for (let i = 0; i < api_participantList.length; i++) {
       initMarker(
         api_participantList[i].id,
@@ -620,7 +847,15 @@ function RealtimeMap() {
         api_participantList[i].latitude,
         api_participantList[i].type
       );
+      tempTabItems.push({
+        key: api_participantList[i].id,
+        label: api_participantList[i].name,
+        children: api_participantList[i].name,
+      });
     }
+
+    setTabContent(tempTabItems);
+
     for (let i = 0; i < api_participantList.length; i++) {
       if (api_participantList[i].supplier) {
         //There is a supplier list
@@ -692,6 +927,8 @@ function RealtimeMap() {
       el.className = "marker-distributor";
     } else if (type === DTDL_MARKER_TYPE.CUSTOMER) {
       el.className = "marker-customer";
+    } else if (type === DTDL_MARKER_TYPE.FARM) {
+      el.className = "marker-farm";
     }
     el.addEventListener("click", (e) => {
       console.log(el.id);
@@ -873,6 +1110,24 @@ function RealtimeMap() {
     showModal(e.target.innerText);
   };
 
+  const onTabChange = (e) => {
+    console.log("TAB CHANGE: ", e);
+    UI_DATA.SELECT_PARTICIPANT_ID = e;
+    for (let i = 0; i < api_participantList.length; i++) {
+      if (api_participantList[i].id == e) {
+        console.log(api_participantList[i]);
+        diagramSet(api_participantList[i].bpmn);
+        api_fetchBpmnProcessById(api_participantList[i].id);
+        return;
+      }
+    }
+  };
+
+  const showTaskModal = (id) => {
+    console.log("TASK MODAL: ", id);
+    setOpenTaskModal(true);
+  };
+
   const columns = [
     {
       title: "ID",
@@ -911,7 +1166,7 @@ function RealtimeMap() {
         <a
           onClick={(e) => {
             console.log(e.target.innerText);
-            api_fecthCargoData(e.target.innerText);
+            api_fetchCargoData(e.target.innerText);
             showCargoModal(e.target.innerText);
           }}
         >
@@ -1002,17 +1257,6 @@ function RealtimeMap() {
           </Row>
           <Row>
             <Col span={24}>
-              <Button
-                onClick={() => {
-                  if (trigger) {
-                    setTrigger(false);
-                  } else {
-                    setTrigger(true);
-                  }
-                }}
-              >
-                Test
-              </Button>
               <Notification trigger={trigger} />
             </Col>
           </Row>
@@ -1055,6 +1299,10 @@ function RealtimeMap() {
             <div>
               <span style={{ fontWeight: "bold" }}>Address: </span>{" "}
               {selectAddress}
+            </div>
+            <div>
+              <span style={{ fontWeight: "bold" }}>Description: </span>{" "}
+              {description}
             </div>
             <div>
               <span style={{ fontWeight: "bold" }}>Supplier: </span>{" "}
@@ -1157,6 +1405,14 @@ function RealtimeMap() {
               <span style={{ fontWeight: "bold" }}>Destination: </span>{" "}
               {truckDestination}
             </div>
+            <div>
+              <span style={{ fontWeight: "bold" }}>Temperature: </span>{" "}
+              {cargoTemperature}
+            </div>
+            <div>
+              <span style={{ fontWeight: "bold" }}>Humidity: </span>{" "}
+              {cargoHumidity}
+            </div>
           </Modal>
           <Modal
             title="Cargo"
@@ -1186,14 +1442,44 @@ function RealtimeMap() {
               id="container"
               style={{
                 border: "1px solid #000000",
-                height: "600px",
+                height: "400px",
                 width: "100%",
                 margin: "auto",
+                zIndex: 100,
               }}
-            >
-              Test
-            </div>
+            ></div>
           </Modal>
+          <Modal
+            title="Task"
+            open={openTaskModal}
+            onOk={() => {
+              setOpenTaskModal(false);
+            }}
+            onCancel={() => {
+              setOpenTaskModal(false);
+            }}
+            width={1000}
+          >
+            Process
+          </Modal>
+        </Col>
+      </Row>
+      <Row>
+        <Col span={24}>
+          <Tabs
+            defaultActiveKey="1"
+            items={tabContent}
+            onChange={onTabChange}
+          />
+          <div
+            id="container"
+            style={{
+              border: "1px solid #000000",
+              height: "250px",
+              width: "100%",
+              margin: "auto",
+            }}
+          ></div>
         </Col>
       </Row>
     </div>

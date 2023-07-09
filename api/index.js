@@ -1,4 +1,4 @@
-const dayjs = require("dayjs");
+/* const dayjs = require("dayjs");
 const express = require("express");
 const app = express();
 const bodyParser = require("body-parser");
@@ -70,7 +70,7 @@ app.post("/new_participants", (req, res) => {
   db.query(sqlCreate, (err, result) => {
     if (err) throw err;
     res.send(result);
-  }); */
+  }); 
 });
 
 app.post("/insert_statistic", (req, res) => {
@@ -81,7 +81,7 @@ app.post("/insert_statistic", (req, res) => {
       (p) =>
         `('${p.participantKey}', '${p.simulationKey}','${p.data.totalInventory}', '${p.data.otalBackorder}', CURDATE())`
     )
-    .join(","); */
+    .join(","); 
   const values = `('${body.participantKey}', '${body.simulationKey}','${body.data.totalInventory}', '${body.data.totalBackOrder}', STR_TO_DATE('${body.date}','%Y-%m-%dT%T.%fZ'))`;
   const sqlCreate = `insert into Statistic (ParticipantKey, SimulationKey, TotalInventory, TotalBackorder, Date) values ${values};`;
   db.query(sqlCreate, (err, result) => {
@@ -112,7 +112,7 @@ app.post("/insert_statistic", (req, res) => {
   db.query(sqlCreate, (err, result) => {
     if (err) throw err;
     res.send(result);
-  }); */
+  }); 
 });
 
 app.get("/get_simulation_list", (req, res) => {
@@ -155,4 +155,120 @@ and participants.ParticipantKey = '${participant}';`;
 
 app.listen(PORT, () => {
   console.log(`listening on port http://localhost:${PORT}`);
+}); */
+const { Client } = require("azure-iot-device");
+const Mqtt = require("azure-iot-device-mqtt").Mqtt;
+const { Message } = require("azure-iot-device");
+const { EventHubConsumerClient } = require("@azure/event-hubs");
+const { supabase } = require("./config/supabaseClient.js");
+
+// If you have access to the Event Hub-compatible connection string from the Azure portal, then
+// you can skip the Azure CLI commands above, and assign the connection string directly here.
+const eventHubConnectionString = `Endpoint=sb://ihsuprodsgres025dednamespace.servicebus.windows.net/;SharedAccessKeyName=iothubowner;SharedAccessKey=MVMEf3cd4a8kQFzWh6MmT+DKsq1F78ZDXbpDBvec2Ss=;EntityPath=iothub-ehub-demoiot-25131092-2791705379`;
+
+// Replace with your connection string and device ID
+const connectionString =
+  "HostName=DemoIOT.azure-devices.net;DeviceId=rasberry_pi;SharedAccessKey=3Q6ogP2mCwXgc4XhMpNEqnmavug/zvkVKfRlMYgrq6o=";
+const deviceId =
+  "HostName=DemoIOT.azure-devices.net;DeviceId=rasberry_pi;SharedAccessKey=3Q6ogP2mCwXgc4XhMpNEqnmavug/zvkVKfRlMYgrq6o=";
+// Create a new IoT Hub client
+const client = Client.fromConnectionString(connectionString, Mqtt);
+
+var printError = function (err) {
+  console.log(err.message);
+};
+
+// Display the message content - telemetry and properties.
+// - Telemetry is sent in the message body
+// - The device can add arbitrary properties to the message
+// - IoT Hub adds system properties, such as Device Id, to the message.
+var printMessages = function (messages) {
+  for (const message of messages) {
+    console.log("Telemetry received: ");
+    console.log(message.body);
+    //console.log(message.body.telemetry.id);
+    console.log("Properties (set by device): ");
+    /* console.log(JSON.stringify(message.properties));
+    console.log("Temperatures: ", message.properties.sensor1);
+    console.log("Humidity:", message.properties.sensor2);
+    console.log("System properties (set by IoT Hub): ");
+    console.log(JSON.stringify(message.systemProperties)); */
+
+    //api_updateLiveTelemetry(message.body.telemetry.id, message.properties);
+
+    console.log("");
+  }
+};
+
+async function api_updateLiveTelemetry(id, properties) {
+  const { error } = await supabase.from("live_telemetry").insert({
+    temperature: properties.sensor1,
+    humidity: properties.sensor2,
+    device_id: id,
+  });
+}
+
+// Open a connection to the IoT Hub
+client.open((err) => {
+  if (err) {
+    console.error("Error opening IoT Hub connection:", err);
+  } else {
+    console.log("IoT Hub connection opened");
+
+    // Send a message to the IoT device
+    /* const message = new Message(
+      JSON.stringify({
+        data: "Hello from the cloud!",
+      })
+    );
+    console.log("Sending message:", message.getData());
+    client.sendEvent(message, (err, res) => {
+      if (err) {
+        console.error("Error sending message:", err);
+      } else {
+        console.log(
+          "Message sent to IoT device with status:",
+          res.constructor.name
+        );
+      }
+      client.close();
+    }); */
+
+    // Listen for incoming messages from the device
+    client.on("message", (msg) => {
+      console.log("Received message from device:", msg.getData().toString());
+    });
+  }
+});
+
+async function main() {
+  console.log("IoT Hub Quickstarts - Read device to cloud messages.");
+
+  // If using websockets, uncomment the webSocketOptions below
+  // If using proxy, then set `webSocketConstructorOptions` to { agent: proxyAgent }
+  // You can also use the `retryOptions` in the client options to configure the retry policy
+  const clientOptions = {
+    // webSocketOptions: {
+    //   webSocket: WebSocket,
+    //   webSocketConstructorOptions: {}
+    // }
+  };
+
+  // Create the client to connect to the default consumer group of the Event Hub
+  const consumerClient = new EventHubConsumerClient(
+    "$Default",
+    eventHubConnectionString,
+    clientOptions
+  );
+
+  // Subscribe to messages from all partitions as below
+  // To subscribe to messages from a single partition, use the overload of the same method.
+  consumerClient.subscribe({
+    processEvents: printMessages,
+    processError: printError,
+  });
+}
+
+main().catch((error) => {
+  console.error("Error running sample:", error);
 });

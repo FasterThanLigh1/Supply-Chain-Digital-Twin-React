@@ -3078,6 +3078,14 @@ section.ant-layout.ant-layout-has-sider.layouFt-dashboard.layout-profile
   fill: green !important; /* color elements as green */
 }
 
+.highlight-active:not(.djs-connection) .djs-visual > :nth-child(1) {
+  fill: green !important; /* color elements as green */
+}
+
+.highlight-idle:not(.djs-connection) .djs-visual > :nth-child(1) {
+  fill: yellow !important; /* color elements as green */
+}
+
 .highlight-participant:not(.djs-connection) .djs-visual > :nth-child(1) {
   fill: yellow !important; /* color elements as green */
 }
@@ -3148,6 +3156,16 @@ section.ant-layout.ant-layout-has-sider.layouFt-dashboard.layout-profile
 
 .marker-vehicle {
   background-image: url("../public/Image/cargo-truck.png");
+  border: solid black;
+  background-size: cover;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.marker-farm {
+  background-image: url("../public/Image/cow.png");
   border: solid black;
   background-size: cover;
   width: 50px;
