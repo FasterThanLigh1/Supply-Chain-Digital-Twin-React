@@ -185,27 +185,51 @@ var printError = function (err) {
 var printMessages = function (messages) {
   for (const message of messages) {
     console.log("Telemetry received: ");
-    console.log(message.body);
+
+    if (message.body.type == "truck") {
+      console.log("Truck received");
+      console.log(message.body);
+      api_updateVehicleById(message.body);
+    }
+    if (message.body.type == "milk_monitor") {
+      console.log("Milk monitor resceive");
+      console.log(message.body);
+    }
     //console.log(message.body.telemetry.id);
-    console.log("Properties (set by device): ");
-    /* console.log(JSON.stringify(message.properties));
-    console.log("Temperatures: ", message.properties.sensor1);
+    // console.log("Properties (set by device): ");
+    // console.log(JSON.stringify(message.properties));
+    /*console.log("Temperatures: ", message.properties.sensor1);
     console.log("Humidity:", message.properties.sensor2);
     console.log("System properties (set by IoT Hub): ");
     console.log(JSON.stringify(message.systemProperties)); */
 
-    //api_updateLiveTelemetry(message.body.telemetry.id, message.properties);
+    //api_updateLiveTelemetry(message.body);
 
     console.log("");
   }
 };
 
-async function api_updateLiveTelemetry(id, properties) {
-  const { error } = await supabase.from("live_telemetry").insert({
-    temperature: properties.sensor1,
-    humidity: properties.sensor2,
-    device_id: id,
-  });
+async function api_updateLiveTelemetry(data) {
+  const { error } = await supabase
+    .from("iot_devices")
+    .update({
+      data: data,
+    })
+    .eq("id", "rasperry_1");
+}
+
+async function api_updateVehicleById(data) {
+  const { error } = await supabase
+    .from("vehicle")
+    .update({
+      longitude: data.longitude,
+      latitude: data.latitude,
+      temperature: data.temperature,
+      humidity: data.humidity,
+      cargo_weight: data.cargo_weight,
+      velocity: data.speed,
+    })
+    .eq("id", data.id);
 }
 
 // Open a connection to the IoT Hub

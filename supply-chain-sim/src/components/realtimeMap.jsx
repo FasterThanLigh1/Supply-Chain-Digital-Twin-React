@@ -20,6 +20,7 @@ import {
   Table,
   Tag,
   Tabs,
+  Card,
 } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 import { selectChildTwinArray, setChildTwinArray } from "../features/dtdlSlice";
@@ -38,6 +39,7 @@ import "bpmn-js/dist/assets/diagram-js.css";
 import "bpmn-js/dist/assets/bpmn-font/css/bpmn-embedded.css";
 import axios from "axios";
 import BootstrapModal from "react-bootstrap/Modal";
+import TruckModalCard from "./truckModalCard";
 
 mapboxgl.accessToken = mapaboxAcessToken;
 
@@ -178,6 +180,7 @@ function RealtimeMap() {
   const [isTruckActive, setIsTruckActive] = useState(false);
   const [cargoTemperature, setCargoTemperature] = useState(null);
   const [cargoHumidity, setCargoHumidity] = useState(null);
+  const [truckCargo, setTruckCargo] = useState(null);
 
   //ORDER ATTRIBUTE
   const [orderData, setOrderData] = useState([]);
@@ -201,10 +204,25 @@ function RealtimeMap() {
   //UI ATTRIBUTE
   const [selectDeviceId, setSelectDeviceId] = useState(null);
   const [tabContent, setTabContent] = useState(null);
-  const [currentBpmnTask, setCurrentBpmnTask] = useState([]);
+  const [currentDate, setCurrentDate] = useState(null);
+  const [localeTime, setLocaleTime] = useState(new Date().toLocaleString());
 
   //BPMN UI ATTRIBUTE
   const [openTaskModal, setOpenTaskModal] = useState(false);
+  const [taskName, setTaskName] = useState(null);
+  const [taskId, setTaskId] = useState(null);
+  const [taskIotId, setTaskIotId] = useState(null);
+  const [taskIotData, setTaskIotData] = useState(null);
+  const [taskStatus, setTaskStatus] = useState(null);
+  const [taskIotType, setTaskIotType] = useState(null);
+
+  useEffect(() => {
+    let secTimer = setInterval(() => {
+      setLocaleTime(new Date().toLocaleString());
+    }, 1000);
+
+    return () => clearInterval(secTimer);
+  }, []);
 
   useEffect(() => {
     console.log(diagram);
@@ -239,17 +257,7 @@ function RealtimeMap() {
             var elementRegistry = modeler.get("elementRegistry");
             var canvas = modeler.get("canvas");
             setCanvas(canvas);
-            //setCanvas(canvas);
-            console.log(elementRegistry);
-            elementRegistry.forEach(function (elem, gfx) {
-              if (elem.type === "bpmn:StartEvent") {
-                // do something with the task
-                const businessObject = elem.businessObject;
-                /* canvas.addMarker(elem.id, "highlight"); */
-                console.log("Start", elem);
-                //canvas.addMarker(elem.id, "highlight");
-              }
-            });
+            UI_DATA.SELECT_CANVAS = canvas;
             let eventBus = modeler.get("eventBus");
             let events = [
               "element.hover",
@@ -262,11 +270,11 @@ function RealtimeMap() {
 
             events.forEach(function (event) {
               eventBus.on(event, function (e) {
-                // e.element = the model element
-                // e.gfx = the graphical element
                 if (event === "element.click") {
-                  console.log(event, "on", e.element.id);
-                  showTaskModal(e.element.id);
+                  if (e.element.type == "bpmn:Task") {
+                    console.log(event, "on", e.element.id);
+                    showTaskModal(e.element.id);
+                  }
                 }
               });
             });
@@ -278,7 +286,6 @@ function RealtimeMap() {
           } else {
             console.log("[modeler", currentModeler);
             var elementRegistry = currentModeler.get("elementRegistry");
-            //setCanvas(canvas);
             console.log(elementRegistry);
             const tempTask = [];
             elementRegistry.forEach(function (elem, gfx) {
@@ -287,13 +294,9 @@ function RealtimeMap() {
                 // do something with the task
                 console.log("Start", elem);
                 tempTask.push(elem);
-
-                //canvas.addMarker(elem.id, "highlight");
-                //simulationSupport.triggerElement(elem.id);
               }
             });
-            console.log(tempTask);
-            setCurrentBpmnTask(tempTask);
+            console.log("SET TASK: ", tempTask);
             UI_DATA.SELECT_BPMN_TASK = tempTask;
           }
         });
@@ -347,167 +350,67 @@ function RealtimeMap() {
     setTruckModalOpen(false);
   };
 
-  useEffect(() => {
-    const channel = supabase
-      .channel("schema-db-changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-        },
-        (payload) => console.log(payload)
-      )
-      .subscribe();
-    /* const channelVehicle = supabase
-      .channel("schema-db-changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: SUPABASE_TABLE.IOT_DEVICES,
-        },
-        (payload) => {
-          console.log("Changes: ", payload.new);
-        }
-      )
-      .subscribe(); */
-  }, []);
-
   //SUPABASE FETCH
   useEffect(() => {
     console.log("START FETCH");
-    const channelData = supabase
-      .channel("schema-db-changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: SUPABASE_TABLE.LIVE_DATA,
-        },
-        (payload) => {
-          console.log("Changes: ", payload);
-        }
-      )
-      .subscribe();
-    const channelVehicle = supabase
-      .channel("schema-db-changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: SUPABASE_TABLE.VEHICLE,
-        },
-        (payload) => {
-          console.log("Changes: ", payload.new);
+    api_fetchParticipantList();
+    api_fetchProducData();
+
+    supabase
+      .channel("any")
+      .on("postgres_changes", { event: "*", schema: "*" }, (payload) => {
+        console.log("Change received!", payload);
+        console.log("In table: ", payload.table);
+        //VEHICLE CHANGES
+        if (payload.table == SUPABASE_TABLE.VEHICLE) {
           adjustTruckMarker(payload.new);
         }
-      )
-      .subscribe();
-    const channelTransport = supabase
-      .channel("schema-db-changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: SUPABASE_TABLE.TRANSPORT_DATA,
-        },
-        (payload) => {
-          console.log("Changes: ", payload);
-          onUpdateTransport(payload.new);
-        }
-      )
-      .subscribe();
-    const channelTrigger = supabase
-      .channel("schema-db-changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: SUPABASE_TABLE.WARNING_LIST,
-        },
-        (payload) => {
-          console.log("Changes: ", payload);
+        //WARNING CHANGES
+        else if (payload.table == SUPABASE_TABLE.WARNING_LIST) {
           setTrigger(payload.new);
         }
-      )
-      .subscribe();
-    const channelTelemetry = supabase
-      .channel("schema-db-changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: SUPABASE_TABLE.LIVE_TELEMETRY,
-        },
-        (payload) => {
-          console.log("Changes: ", payload);
-          console.log("ID: ", selectDeviceId);
-          setCargoTemperature(payload.new.temperature);
-          setCargoHumidity(payload.new.humidity);
-          if (payload.new.device_id == selectDeviceId) {
-          }
+        //TRANSPORT CHANGES
+        else if (payload.table == SUPABASE_TABLE.TRANSPORT_DATA) {
+          onUpdateTransport(payload.new);
         }
-      )
-      .subscribe();
-    const channelLiveProcess = supabase
-      .channel("schema-db-changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: SUPABASE_TABLE.LIVE_PROCESS,
-        },
-        (payload) => {
-          console.log("Changes: ", payload);
-          api_fetchBpmnProcessById(UI_DATA.SELECT_PARTICIPANT_ID);
-          console.log(UI_DATA.SELECT_BPMN_TASK);
-          /* for (let i = 0; i < UI_DATA.SELECT_BPMN_TASK.length; i++) {
-            canvas.removeMarker(
-              UI_DATA.SELECT_BPMN_TASK[i].id,
-              "highlight-idle"
-            );
-            canvas.removeMarker(
-              UI_DATA.SELECT_BPMN_TASK[i].id,
-              "highlight-active"
-            );
-          } */
-          for (let i = 0; i < currentBpmnTask.length; i++) {
-            if (currentBpmnTask[i].id == payload.new.id) {
-              console.log(currentBpmnTask[i]);
-              //REMOVE OLD MARKER
-              /* if (payload.old.status == SUPABASE_TABLE.PROCESS_STATUS.ACTIVE) {
-                canvas.removeMarker(payload.new.id, "highlight-active");
-              } else if (
-                payload.old.status == SUPABASE_TABLE.PROCESS_STATUS.IDLE
-              ) {
-                canvas.removeMarker(payload.new.id, "highlight-idle");
-              } */
+        //IOT CHANGES
+        else if (payload.table == SUPABASE_TABLE.IOT_DEVICES) {
+          setTaskIotData(payload.new.data);
+        }
+        //PROCESS CHANGES
+        else if (payload.table == SUPABASE_TABLE.LIVE_PROCESS) {
+          console.log(payload.new);
+          for (let j = 0; j < UI_DATA.SELECT_BPMN_TASK.length; j++) {
+            if (payload.new.id == UI_DATA.SELECT_BPMN_TASK[j].id) {
               //ADD NEW MARKER
               if (payload.new.status == SUPABASE_TABLE.PROCESS_STATUS.ACTIVE) {
                 console.log("ACTIVE");
-                canvas.addMarker(payload.new.id, "highlight-active");
+                UI_DATA.SELECT_CANVAS.removeMarker(
+                  payload.new.id,
+                  "highlight-idle"
+                );
+                UI_DATA.SELECT_CANVAS.addMarker(
+                  payload.new.id,
+                  "highlight-active"
+                );
               } else if (
                 payload.new.status == SUPABASE_TABLE.PROCESS_STATUS.IDLE
               ) {
                 console.log("IDLE");
-                canvas.addMarker(payload.new.id, "highlight-idle");
+                UI_DATA.SELECT_CANVAS.removeMarker(
+                  payload.new.id,
+                  "highlight-active"
+                );
+                UI_DATA.SELECT_CANVAS.addMarker(
+                  payload.new.id,
+                  "highlight-idle"
+                );
               }
             }
           }
         }
-      )
+      })
       .subscribe();
-
-    api_fetchParticipantList();
-    api_fetchProducData();
   }, []);
 
   //FECTH TRANSPORTATION DATA
@@ -616,7 +519,7 @@ function RealtimeMap() {
       console.log(error);
     } else {
       console.log(" SELECTED VEHICLE: ", data);
-      api_fecthLatestTelemetry(data[0].iot_device_id);
+      //api_fecthLatestTelemetry(data[0].iot_device_id);
       console.log("NEW DEVICE ID: ", data[0].iot_device_id);
       setSelectDeviceId(data[0].iot_device_id);
 
@@ -630,8 +533,61 @@ function RealtimeMap() {
       setTruckLatitude(data[0].latitude);
       setTruckDestination(data[0].current_destination);
       setIsTruckActive(data[0].is_active);
+      setCargoTemperature(data[0].temperature);
+      setCargoHumidity(data[0].humidity);
+      setTruckCargo(data[0].cargo_id);
 
       setfetchError(null);
+    }
+  };
+
+  //FETCH PROCESS
+  const api_fecthTaskById = async (id) => {
+    const { data, error } = await supabase
+      .from(SUPABASE_TABLE.LIVE_PROCESS)
+      .select()
+      .eq("id", id);
+    if (error) {
+      setfetchError(error);
+      console.log(error);
+    } else {
+      console.log("TASK: ", data);
+      console.log(data[0].name);
+      setTaskName(data[0].name);
+      setTaskId(data[0].id);
+      setTaskStatus(data[0].status);
+      setTaskIotId(data[0].iot_device_id);
+
+      api_fetchIOTById(data[0].iot_device_id);
+    }
+  };
+
+  //FETCH IOT DEVICE
+  const api_fetchIOTById = async (id) => {
+    const { data, error } = await supabase
+      .from(SUPABASE_TABLE.IOT_DEVICES)
+      .select()
+      .eq("id", id);
+    if (error) {
+      setfetchError(error);
+      console.log(error);
+    } else {
+      console.log("IOT DEVICES: ", data);
+      console.log(data[0].data.data);
+      setTaskIotType(data[0].data.type);
+      setTaskIotData(data[0].data.data);
+      if (data[0].data.type == SUPABASE_TABLE.IOT_DEVICE_TYPE.MILK_MONITOR) {
+        console.log("MILK MONITORITOR");
+        console.log(data[0].data);
+      } else if (
+        data[0].data.type == SUPABASE_TABLE.IOT_DEVICE_TYPE.PACKAGE_MONITOR
+      ) {
+        console.log("PACKAGE MONITORITOR");
+      } else if (
+        data[0].data.type == SUPABASE_TABLE.IOT_DEVICE_TYPE.MILK_MONITOR
+      ) {
+        console.log("MILK MONITORITOR");
+      }
     }
   };
 
@@ -704,19 +660,20 @@ function RealtimeMap() {
       console.log(error);
     } else {
       console.log(data);
+      console.log("CURRENT TASK: ", UI_DATA.SELECT_BPMN_TASK);
       for (let i = 0; i < data.length; i++) {
         console.log(data[i].id);
-        console.log(currentBpmnTask);
-        for (let j = 0; j < currentBpmnTask.length; j++) {
-          console.log(currentBpmnTask[j].id);
-          console.log(data[i].id);
-          if (data[i].id == currentBpmnTask[j].id) {
+        console.log(UI_DATA.SELECT_BPMN_TASK);
+        for (let j = 0; j < UI_DATA.SELECT_BPMN_TASK.length; j++) {
+          console.log(UI_DATA.SELECT_BPMN_TASK[j].id);
+          console.log(data[i].id, data[i].status);
+          if (data[i].id == UI_DATA.SELECT_BPMN_TASK[j].id) {
             if (data[i].status == SUPABASE_TABLE.PROCESS_STATUS.ACTIVE) {
               console.log("ACTIVE");
-              canvas.addMarker(data[i].id, "highlight-active");
+              UI_DATA.SELECT_CANVAS.addMarker(data[i].id, "highlight-active");
             } else if (data[i].status == SUPABASE_TABLE.PROCESS_STATUS.IDLE) {
               console.log("IDLE");
-              canvas.addMarker(data[i].id, "highlight-idle");
+              UI_DATA.SELECT_CANVAS.addMarker(data[i].id, "highlight-idle");
             }
           }
         }
@@ -968,7 +925,8 @@ function RealtimeMap() {
       marker: temp,
     });
 
-    setTruckRoute(truckData, "route1", api_participantList);
+    const routeId = "route_" + truckData.id.toString();
+    setTruckRoute(truckData, routeId, api_participantList);
   };
 
   const adjustTruckMarker = (newData) => {
@@ -980,11 +938,8 @@ function RealtimeMap() {
           newData.longitude,
           newData.latitude,
         ]);
-        setTruckRoute(
-          newData,
-          "route1",
-          SUPABASE_DATA.ACTIVE_LIVE_PARTICIPANTS
-        );
+        const routeId = "route_" + newData.id.toString();
+        setTruckRoute(newData, routeId, SUPABASE_DATA.ACTIVE_LIVE_PARTICIPANTS);
         return;
       }
     }
@@ -1125,6 +1080,7 @@ function RealtimeMap() {
 
   const showTaskModal = (id) => {
     console.log("TASK MODAL: ", id);
+    api_fecthTaskById(id);
     setOpenTaskModal(true);
   };
 
@@ -1267,6 +1223,9 @@ function RealtimeMap() {
               <Typography className="bg-sky-950 pt-2 pb-2 pl-2 pr-2 rounded-lg text-white">
                 Lng: {lng} | Lat: {lat} | Zoom: {zoom}
               </Typography>
+              <Typography className="bg-sky-950 pt-2 pb-2 pl-2 pr-2 rounded-lg text-white">
+                Date Time: {localeTime}
+              </Typography>
             </Space>
           </div>
           <Modal
@@ -1367,52 +1326,71 @@ function RealtimeMap() {
             width={1000}
           >
             <h1>
-              <span style={{ fontWeight: "bold" }}>INFORMATION: </span>
+              <span style={{ fontWeight: "bold", fontSize: "20px" }}>
+                INFORMATION:{" "}
+              </span>
             </h1>
             <div>
-              <span style={{ fontWeight: "bold" }}>Name: </span> {truckName}
+              <span style={{ fontWeight: "bold", fontSize: "15px" }}>
+                NAME:{" "}
+              </span>{" "}
+              {truckName}
             </div>
             <div>
-              <span style={{ fontWeight: "bold" }}>Id: </span> {truckId}
+              <span style={{ fontWeight: "bold", fontSize: "15px" }}>ID: </span>{" "}
+              {truckId}
             </div>
             <div>
-              <span style={{ fontWeight: "bold" }}>Max Velocity: </span>{" "}
-              {truckMaxVelocity}
+              <span style={{ fontWeight: "bold", fontSize: "15px" }}>
+                CARGO:{" "}
+              </span>{" "}
+              <a
+                onClick={(e) => {
+                  console.log(e.target.innerText);
+                  api_fetchCargoData(e.target.innerText);
+                  showCargoModal(e.target.innerText);
+                }}
+              >
+                {truckCargo}
+              </a>
             </div>
-            <div>
-              <span style={{ fontWeight: "bold" }}>Weight: </span> {truckWeight}
-            </div>
-            <div>
-              <span style={{ fontWeight: "bold" }}>Max Cargo: </span>{" "}
-              {truckMaxCargo}
-            </div>
-            <div>
-              <span style={{ fontWeight: "bold" }}>Type: </span> {truckType}
-            </div>
-            <div>
-              <span style={{ fontWeight: "bold" }}>Is Active: </span>{" "}
-              {isTruckActive.toString()}
-            </div>
-            <div>
-              <span style={{ fontWeight: "bold" }}>Longitude: </span>{" "}
-              {truckLongitude}
-            </div>
-            <div>
-              <span style={{ fontWeight: "bold" }}>Latitude: </span>{" "}
-              {truckLatitude}
-            </div>
-            <div>
-              <span style={{ fontWeight: "bold" }}>Destination: </span>{" "}
-              {truckDestination}
-            </div>
-            <div>
-              <span style={{ fontWeight: "bold" }}>Temperature: </span>{" "}
-              {cargoTemperature}
-            </div>
-            <div>
-              <span style={{ fontWeight: "bold" }}>Humidity: </span>{" "}
-              {cargoHumidity}
-            </div>
+            <TruckModalCard
+              title={"DESTINATION"}
+              data={truckDestination}
+              unit={""}
+            />
+            <TruckModalCard
+              title={"LONGITUDE"}
+              data={truckLongitude}
+              unit={""}
+            />
+            <TruckModalCard title={"LATITUDE"} data={truckLatitude} unit={""} />
+            <TruckModalCard
+              title={"VELOCITY"}
+              data={truckMaxVelocity}
+              unit={"km/h"}
+            />
+            <TruckModalCard
+              title={"CARGO WEIGHT"}
+              data={truckWeight}
+              unit={"kg"}
+            />
+            <TruckModalCard title={"TYPE"} data={truckType} unit={" "} />
+            <TruckModalCard
+              title={"IS ACTIVE"}
+              data={isTruckActive.toString()}
+              unit={""}
+            />
+            <TruckModalCard
+              title={"TEMPERATURE"}
+              data={cargoTemperature}
+              unit={"celsius"}
+            />
+            <TruckModalCard
+              title={"HUMIDITY"}
+              data={cargoHumidity}
+              unit={"f"}
+            />
           </Modal>
           <Modal
             title="Cargo"
@@ -1450,7 +1428,7 @@ function RealtimeMap() {
             ></div>
           </Modal>
           <Modal
-            title="Task"
+            title={taskName}
             open={openTaskModal}
             onOk={() => {
               setOpenTaskModal(false);
@@ -1460,7 +1438,190 @@ function RealtimeMap() {
             }}
             width={1000}
           >
-            Process
+            <h1>
+              <span style={{ fontWeight: "bold", fontSize: "20px" }}>
+                INFORMATION:{" "}
+              </span>
+            </h1>
+            <div>
+              <span style={{ fontWeight: "bold", fontSize: "15px" }}>
+                NAME:{" "}
+              </span>{" "}
+              {taskName}
+            </div>
+            <div>
+              <span style={{ fontWeight: "bold", fontSize: "15px" }}>ID: </span>{" "}
+              {taskId}
+            </div>
+            <div>
+              <span style={{ fontWeight: "bold", fontSize: "15px" }}>
+                STATUS:{" "}
+              </span>{" "}
+              {taskStatus}
+            </div>
+            <div>
+              <span style={{ fontWeight: "bold", fontSize: "20px" }}>
+                DATA:{" "}
+              </span>{" "}
+            </div>
+            <div>
+              <span style={{ fontWeight: "bold", fontSize: "15px" }}>
+                IOT DEVICE ID:{" "}
+              </span>{" "}
+              {taskIotId}
+            </div>
+            <div>
+              <span style={{ fontWeight: "bold", fontSize: "15px" }}>
+                DATA:{" "}
+              </span>{" "}
+              {taskIotType == SUPABASE_TABLE.IOT_DEVICE_TYPE.MILK_MONITOR ? (
+                <div>
+                  <TruckModalCard
+                    title={"MILK YIELD TOTAL"}
+                    data={taskIotData.milk_yield_total}
+                    unit={"litres"}
+                  />
+                  <TruckModalCard
+                    title={"MILK CONDUCTIVITY"}
+                    data={taskIotData.milk_conductivity}
+                    unit={"litres"}
+                  />
+                  <TruckModalCard
+                    title={"MILK TEMPERATURE"}
+                    data={taskIotData.milk_temperature}
+                    unit={"C"}
+                  />
+                  <TruckModalCard
+                    title={"FAT CONTENT"}
+                    data={taskIotData.fat_content}
+                    unit={"C"}
+                  />
+                  <TruckModalCard
+                    title={"PROTEIN CONTENT"}
+                    data={taskIotData.protein_content}
+                    unit={"C"}
+                  />
+                  <TruckModalCard
+                    title={"PRODUCT DATE"}
+                    data={taskIotData.product_date}
+                    unit={""}
+                  />
+                </div>
+              ) : taskIotType ==
+                SUPABASE_TABLE.IOT_DEVICE_TYPE.PACKAGE_MONITOR ? (
+                <div>
+                  <TruckModalCard
+                    title={"PACKAGE COUNT TOTAL"}
+                    data={taskIotData.package_count_total}
+                    unit={"box"}
+                  />
+                  <TruckModalCard
+                    title={"FAILED PACKAGE"}
+                    data={taskIotData.failed_package}
+                    unit={"box"}
+                  />
+                  <TruckModalCard
+                    title={"DELIVERY DATE"}
+                    data={taskIotData.delivery_date}
+                    unit={""}
+                  />
+                </div>
+              ) : taskIotType ==
+                SUPABASE_TABLE.IOT_DEVICE_TYPE.WAREHOUSE_MONITOR ? (
+                <div>
+                  <TruckModalCard
+                    title={"TEMPERATURE"}
+                    data={taskIotData.temperature}
+                    unit={"C"}
+                  />
+                  <TruckModalCard
+                    title={"HUMIDITY"}
+                    data={taskIotData.humidity}
+                    unit={"litres"}
+                  />
+                  <TruckModalCard
+                    title={"INVENTORY COUNT"}
+                    data={taskIotData.inventory_count}
+                    unit={"C"}
+                  />
+                  <TruckModalCard
+                    title={"TIME STAMP"}
+                    data={taskIotData.time_stamp}
+                    unit={""}
+                  />
+                </div>
+              ) : taskIotType == SUPABASE_TABLE.IOT_DEVICE_TYPE.SALE_MONITOR ? (
+                <div>
+                  <TruckModalCard
+                    title={"ITEM"}
+                    data={taskIotData.item}
+                    unit={""}
+                  />
+                  <TruckModalCard
+                    title={"PRICE"}
+                    data={taskIotData.price}
+                    unit={"dollars"}
+                  />
+                  <TruckModalCard
+                    title={"COUNT"}
+                    data={taskIotData.count}
+                    unit={"C"}
+                  />
+                  <TruckModalCard
+                    title={"DISCOUNT"}
+                    data={taskIotData.discount}
+                    unit={"C"}
+                  />
+                  <TruckModalCard
+                    title={"TIME STAMP"}
+                    data={taskIotData.time_stamp}
+                    unit={""}
+                  />
+                </div>
+              ) : taskIotType ==
+                SUPABASE_TABLE.IOT_DEVICE_TYPE.PRODUCE_MONITOR ? (
+                <div>
+                  <TruckModalCard
+                    title={"PRODUCT"}
+                    data={taskIotData.product}
+                    unit={""}
+                  />
+                  <TruckModalCard
+                    title={"PRODUCT ID"}
+                    data={taskIotData.product_id}
+                    unit={"C"}
+                  />
+                  <TruckModalCard
+                    title={"COUNT"}
+                    data={taskIotData.count}
+                    unit={"C"}
+                  />
+                  <TruckModalCard
+                    title={"PRODUCTION RATE"}
+                    data={taskIotData.poduction_rate}
+                    unit={"C"}
+                  />
+                  <TruckModalCard
+                    title={"TIME STAMP"}
+                    data={taskIotData.time_stamp}
+                    unit={""}
+                  />
+                </div>
+              ) : taskIotType == SUPABASE_TABLE.IOT_DEVICE_TYPE.SHIP_MONITOR ? (
+                <div>
+                  <TruckModalCard
+                    title={"TRANSPORT ID"}
+                    data={taskIotData.transport_id}
+                    unit={""}
+                  />
+                  <TruckModalCard
+                    title={"START DATE"}
+                    data={taskIotData.start_date}
+                    unit={""}
+                  />
+                </div>
+              ) : null}
+            </div>
           </Modal>
         </Col>
       </Row>

@@ -113,6 +113,14 @@ export const SUPABASE_TABLE = {
     ACTIVE: "active",
     IDLE: "idle",
   },
+  IOT_DEVICE_TYPE: {
+    MILK_MONITOR: "milk-monitor",
+    WAREHOUSE_MONITOR: "warehouse-monitor",
+    PACKAGE_MONITOR: "package-monitor",
+    SALE_MONITOR: "sales-monitor",
+    PRODUCE_MONITOR: "produce-monitor",
+    SHIP_MONITOR: "shipping-monitor",
+  },
 };
 
 //SUPABASE VARIABLES
@@ -126,4 +134,5 @@ export const UI_DATA = {
   SELECT_DEVICE_ID: null,
   SELECT_PARTICIPANT_ID: null,
   SELECT_BPMN_TASK: [],
+  SELECT_CANVAS: null,
 };
