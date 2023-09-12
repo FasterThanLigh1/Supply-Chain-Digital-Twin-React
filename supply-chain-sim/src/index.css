@@ -11,6 +11,18 @@
   background-opacity: 0.5;
 }
  */
+
+a:hover {
+  color: rgb(251 191 36);
+}
+
+img {
+  max-width: 100%;
+  max-height: 100%;
+  width: 100%;
+  height: 100%;
+}
+
 body {
   padding: 0 0 30px 0;
   background-color: #fafafa;
@@ -3021,8 +3033,9 @@ aside.ant-layout-sider.ant-layout-sider-light.sider-primary.ant-layout-sider-pri
 }
 
 .ant-btn-primary {
-  color: black;
-  border-color: black;
+  color: white;
+  background-color: #096dd9;
+  border-radius: 12%;
 }
 
 .ant-btn-dashed {
@@ -3053,6 +3066,7 @@ section.ant-layout.ant-layout-has-sider.layouFt-dashboard.layout-profile
 
 .mapbox-gl-canvas {
   right: 0;
+  height: 100%;
 }
 
 .customer-footer {
@@ -3069,6 +3083,14 @@ section.ant-layout.ant-layout-has-sider.layouFt-dashboard.layout-profile
   fill: green !important; /* color elements as green */
 }
 
+.highlight-active:not(.djs-connection) .djs-visual > :nth-child(1) {
+  fill: green !important; /* color elements as green */
+}
+
+.highlight-idle:not(.djs-connection) .djs-visual > :nth-child(1) {
+  fill: yellow !important; /* color elements as green */
+}
+
 .highlight-participant:not(.djs-connection) .djs-visual > :nth-child(1) {
   fill: yellow !important; /* color elements as green */
 }
@@ -3076,6 +3098,10 @@ section.ant-layout.ant-layout-has-sider.layouFt-dashboard.layout-profile
 /* Map Style */
 .map-container {
   height: 400px;
+}
+
+.realtime-map-container {
+  height: 100%;
 }
 
 .marker-supplier {
@@ -3134,8 +3160,17 @@ section.ant-layout.ant-layout-has-sider.layouFt-dashboard.layout-profile
 }
 
 .marker-vehicle {
-  background-image: url("../public/Image/truck.png");
-  background-color: white;
+  background-image: url("../public/Image/cargo-truck.png");
+  border: solid black;
+  background-size: cover;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.marker-farm {
+  background-image: url("../public/Image/cow.png");
   border: solid black;
   background-size: cover;
   width: 50px;
@@ -3155,3 +3190,29 @@ section.ant-layout.ant-layout-has-sider.layouFt-dashboard.layout-profile
   margin: 12px;
   border-radius: 4px;
 }
+
+.ant-checkbox-inner {
+  background-color: rgb(251 191 36) !important;
+  border-color: transparent !important;
+}
+
+/* .ant-menu-item-selected {
+  background-color: white !important;
+  color: rgb(251 191 36) !important;
+}
+
+.ant-menu-item {
+  color: white !important;
+}
+*/
+.ant-menu-item-active {
+  color: white !important;
+  text-decoration: none !important;
+}
+.ant-card-head {
+  background-color: rgb(251 191 36) !important;
+  color: white !important;
+}
+/* .react-bpmn-diagram-container {
+  height: 100vh !important;
+} */

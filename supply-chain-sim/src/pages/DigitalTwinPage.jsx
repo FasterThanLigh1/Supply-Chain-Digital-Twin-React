@@ -1,5 +1,15 @@
-import { Button, Upload, message, Row, Col } from "antd";
-import React, { useEffect } from "react";
+import {
+  Button,
+  Upload,
+  message,
+  Row,
+  Col,
+  Space,
+  Input,
+  Tabs,
+  Skeleton,
+} from "antd";
+import React, { useEffect, useState } from "react";
 import RealtimeMap from "../components/realtimeMap";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -8,69 +18,54 @@ import {
   setMainTwin,
 } from "../features/dtdlSlice";
 import { InboxOutlined } from "@ant-design/icons";
-import { DTDL_CONTENT_ATTRIBUTES } from "../constants";
+import { DTDL_CONTENT_ATTRIBUTES, SUPABASE_TABLE } from "../constants";
 import _ from "lodash";
+import { selectUser } from "../features/userSlice";
+import supabase from "../config/supabaseClient";
+import SalesData from "../components/salesData";
+import IoTData from "../components/iotData";
+import BpmnTab from "../components/bpmnTab";
+
 const { Dragger } = Upload;
 
 function DigitalTwinPage() {
   const dispatch = useDispatch();
   const thisChildTwinArray = useSelector(selectChildTwinArray);
+  const currentUser = useSelector(selectUser);
+  const [organizationIdRender, setOrganizationIdRender] = useState(null);
+  const [sessionUser, setSessionUser] = useState(null);
+  const [organizationId, setOrganizationId] = useState(null);
+  const [organizationName, setOrganizationName] = useState(null);
 
-  const childProps = {
-    name: "file",
-    multiple: true,
-    action: "https://www.mocky.io/v2/5cc8019d300000980a055e76",
-    onChange(info) {
-      const { status } = info.file;
-      if (status !== "uploading") {
-        console.log(info.file, info.fileList);
-      }
-      if (status === "done") {
-        message.success(`${info.file.name} file uploaded successfully.`);
-        let reader = new FileReader();
-        reader.onload = (e) => {
-          console.log(e.target.result);
-          onImport(e.target.result);
-        };
-        reader.readAsText(info.file.originFileObj);
-      } else if (status === "error") {
-        message.error(`${info.file.name} file upload failed.`);
-      }
-    },
-    onDrop(e) {
-      console.log("Dropped files", e.dataTransfer.files);
-    },
-  };
+  useEffect(() => {
+    console.log("Current user: ", currentUser);
+    let data = sessionStorage.getItem("currentUser");
+    console.log("Session user: ", data);
+    setSessionUser(data);
+    if (currentUser == null) return;
+    api_fetchUserById(currentUser.id);
+  }, []);
 
-  const mainProps = {
-    name: "file",
-    action: "https://www.mocky.io/v2/5cc8019d300000980a055e76",
-    onChange(info) {
-      const { status } = info.file;
-      if (status !== "uploading") {
-        console.log(info.file, info.fileList);
-      }
-      if (status === "done") {
-        message.success(`${info.file.name} file uploaded successfully.`);
-        let reader = new FileReader();
-        reader.onload = (e) => {
-          console.log(e.target.result);
-          onImportMain(e.target.result);
-        };
-        reader.readAsText(info.file.originFileObj);
-      } else if (status === "error") {
-        message.error(`${info.file.name} file upload failed.`);
-      }
-    },
-    onDrop(e) {
-      console.log("Dropped files", e.dataTransfer.files);
-    },
+  const api_fetchUserById = async (id) => {
+    console.log("Fecthing user");
+    const { data, error } = await supabase
+      .from(SUPABASE_TABLE.USER_LIST)
+      .select()
+      .eq("id", id);
+    if (error) {
+      console.log(error);
+    } else {
+      console.log("Cur user from user list:", data);
+      console.log("Organization id: ", data[0].organizationId);
+      setOrganizationIdRender(data[0].organization_id);
+    }
   };
 
   const onImport = (e) => {
     console.log(e);
     var myObject = JSON.parse(e);
     const data = constructData(myObject.contents);
+    constructConnections(myObject.contents);
     dispatch(
       pushChildTwin({
         schema: myObject,
@@ -101,12 +96,25 @@ function DigitalTwinPage() {
           );
           return { ...acc, [cur.name]: temp };
         } else {
-          return { ...acc, [cur.name]: "default" };
+          return {
+            ...acc,
+            [cur.name]: "default",
+            supplier: null,
+            target: null,
+          };
         }
       }
       return { ...acc };
     }, {});
     return constructedProperties;
+  };
+
+  const constructConnections = (schema) => {
+    console.log("Constructing Connections: ", schema);
+    for (let i = 0; i < schema.length; i++) {
+      if (schema[i].type == DTDL_CONTENT_ATTRIBUTES.RELATIONSHIP) {
+      }
+    }
   };
 
   const getSchemaFromId = (childTwinArray, id) => {
@@ -119,50 +127,74 @@ function DigitalTwinPage() {
     return null;
   };
 
+  async function INSERTOrganization(name) {
+    console.log("Success");
+    const { error } = await supabase
+      .from(SUPABASE_TABLE.ORGANIZATION_LIST)
+      .insert({ name: name });
+  }
+
+  async function UPDATEUserOrganization(id) {
+    const { error } = await supabase
+      .from(SUPABASE_TABLE.USER_LIST)
+      .update({ organization_id: id })
+      .eq("id", currentUser.id);
+  }
+
+  const onChange = (key) => {
+    console.log(key);
+  };
+  const items = [
+    {
+      key: "1",
+      label: "Real time",
+      children: <RealtimeMap />,
+    },
+    {
+      key: "2",
+      label: "Business process models",
+      children: <BpmnTab />,
+    },
+    {
+      key: "3",
+      label: "IoT Data History",
+      children: <IoTData />,
+    },
+    {
+      key: "4",
+      label: "Sales History",
+      children: <SalesData />,
+    },
+  ];
+
   return (
     <div>
-      <Row>
-        <Col span={12}>
-          <Dragger {...childProps}>
-            <p className="ant-upload-drag-icon">
-              <InboxOutlined />
-            </p>
-            <p className="ant-upload-text">
-              Click or drag file to this area to upload
-            </p>
-            <p className="ant-upload-hint">
-              Support for a single or bulk upload. Strictly prohibited from
-              uploading company data or other banned files.
-            </p>
-          </Dragger>
-        </Col>
-        <Col span={12}>
-          <Dragger {...mainProps}>
-            <p className="ant-upload-drag-icon">
-              <InboxOutlined />
-            </p>
-            <p className="ant-upload-text">
-              Click or drag file to this area to upload
-            </p>
-            <p className="ant-upload-hint">
-              Support for a single or bulk upload. Strictly prohibited from
-              uploading company data or other banned files.
-            </p>
-          </Dragger>
-        </Col>
-      </Row>
-      <RealtimeMap />
-      <Button
-        onClick={() => {
-          const temp = getSchemaFromId(
-            thisChildTwinArray,
-            "dtmi:dtdl:Customer1;1"
-          );
-          console.log("Test", temp);
-        }}
-      >
-        Test
-      </Button>
+      {sessionUser == null ? (
+        <Skeleton />
+      ) : (
+        // <div>
+        //   <Space direction="vertical">
+        //     <div>Not part of any organization</div>
+        //     <div>Join a organization</div>
+        //     <Input
+        //       placeholder="Input Id"
+        //       onChange={(e) => {
+        //         setOrganizationId(e.target.value);
+        //       }}
+        //     />
+        //     <Button
+        //       onClick={() => {
+        //         UPDATEUserOrganization(organizationId);
+        //       }}
+        //     >
+        //       Join
+        //     </Button>
+        //   </Space>
+        // </div>
+        <div>
+          <Tabs defaultActiveKey="1" items={items} onChange={onChange} />
+        </div>
+      )}
     </div>
   );
 }

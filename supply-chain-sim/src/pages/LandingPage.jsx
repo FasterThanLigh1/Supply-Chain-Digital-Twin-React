@@ -1,10 +1,106 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link, Route, Routes } from "react-router-dom";
-import { Button } from "antd";
-import { simulationRoute } from "../constants/route";
-import { motion } from "framer-motion";
+import { Button, Row, Col, Checkbox, Form, Input } from "antd";
+import { digitalTwinRoute, simulationRoute } from "../constants/route";
+import { color, motion } from "framer-motion";
+import backgroundImage from "../../public/Image/background2.jpg";
+import officeImage from "../../public/Image/office.jpg";
+import { Auth } from "@supabase/auth-ui-react";
+import { ThemeSupa } from "@supabase/auth-ui-shared";
+import supabase from "../config/supabaseClient";
+import { useDispatch } from "react-redux";
+import { setCurrentUser } from "../features/userSlice";
+import { useNavigate } from "react-router-dom";
+import { openNotificationWithIcon } from "../constants/callback";
+import { MESSAGE_TYPE } from "../constants";
 
 function LandingPage() {
+  const [user, setUser] = useState({});
+  const [isRegiestered, setIsRegiestered] = useState(false);
+  const disptach = useDispatch();
+  const navigate = useNavigate();
+
+  const onFinish = async (values) => {
+    console.log("Success:", values);
+    if (isRegiestered) {
+      const { data, error } = await supabase.auth.signUp({
+        email: values.username,
+        password: values.password,
+      });
+      if (error) {
+        console.log("Error:", error);
+        openNotificationWithIcon(
+          "Sign Up Error",
+          error.toString(),
+          MESSAGE_TYPE.ERROR,
+          10
+        );
+      } else {
+        openNotificationWithIcon(
+          "Sign Up Success",
+          "Please verify you email",
+          MESSAGE_TYPE.SUCCESS,
+          10
+        );
+      }
+    } else {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: values.username,
+        password: values.password,
+      });
+      if (error) {
+        console.log("Error:", error);
+        openNotificationWithIcon(
+          "Sign In Error",
+          error.toString(),
+          MESSAGE_TYPE.ERROR,
+          10
+        );
+      } else {
+        sessionStorage.setItem("currentUser", values);
+      }
+    }
+  };
+  const onFinishFailed = (errorInfo) => {
+    console.log("Failed:", errorInfo);
+  };
+
+  const [session, setSession] = useState(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    console.log("Success");
+    async function GetUserData() {
+      await supabase.auth.getUser().then((value) => {
+        if (value.data?.user) {
+          console.log(value.data?.user);
+          setUser(value.data.user);
+          disptach(setCurrentUser(value.data.user));
+          onLoginSuccessfully();
+        }
+      });
+    }
+
+    GetUserData();
+  }, [session]);
+
+  const onLoginSuccessfully = () => {
+    navigate(digitalTwinRoute);
+  };
+
   return (
     <motion.div
       className="text-center"
@@ -13,62 +109,148 @@ function LandingPage() {
       exit={{ opacity: 1 }}
       transition={{ duration: 0.75, ease: "easeOut" }}
     >
-      <div className="h-480 flex flex-col text-white bg-sky-900">
-        <main className="container mx-auto px-6 pt-16 flex-1 text-center">
-          <h2 className="text-2xl md:text-4xl lg:text-6xl uppercase">
-            SUPPLY CHAIN
-          </h2>
-          <h1 className="text-3xl md:text-6xl lg:text-8xl uppercase font-black mb-8">
-            DIGITAL TWIN
-          </h1>
-
-          <p className="text-base md:text-lg lg:text-2xl mb-8">
-            DEEPEN YOUR KNOWLEDGE OF SUPPLY CHAIN DIGITAL TWINS AND CONTROL
-            TOWERS
-          </p>
-          <Link to={simulationRoute}>
-            <Button
-              name="member[subscribe]"
-              id="member_submit"
-              className="mt-8 mb-8 items-center h-20 py-2 px-4 md:text-2xl lg:text-1xl justify-between w-fit lg:px-12 font-bold uppercase cursor-pointer hover:opacity-75 rounded-full text-white"
-              //className="bg-primary md:rounded-tl-none md:rounded-bl-none rounded-full text-2xl py-4 px-6 md:px-10 lg:py-6 lg:px-12 font-bold uppercase cursor-pointer hover:opacity-75 duration-150"
+      <div
+        style={{
+          height: "100vh",
+        }}
+      >
+        <Row>
+          <Col
+            span={16}
+            style={{
+              height: "100%",
+              padding: "20px 10px 10px 30px",
+            }}
+          >
+            <div
+              style={{
+                height: "100vh",
+                backgroundImage: `url(${backgroundImage})`,
+                backgroundSize: "cover",
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "center",
+              }}
             >
-              Get Started
-            </Button>
-          </Link>
-        </main>
+              <div className="pt-40 h-full grid place-items-center h-screen pb-60">
+                <h1 className="text-8xl mb-5 font-bold text-white bg-neutral-950 bg-opacity-50 w-10/12 rounded-lg p-8">
+                  SUPPLY CHAIN
+                  <h2 className="text-6xl font-bold text-amber-400">
+                    DIGITAL TWIN
+                  </h2>
+                </h1>
+              </div>
+            </div>
+          </Col>
+          <Col
+            span={8}
+            style={{
+              height: "100vh",
+            }}
+          >
+            <div className="h-screen grid place-items-center text-left">
+              <div className="w-full">
+                <span className="text-left w-full ml-10">
+                  <span
+                    style={{
+                      color: isRegiestered ? "black" : "rgb(251 191 36)",
+                      fontSize: "1.25rem",
+                      lineHeight: "1.75rem",
+                    }}
+                  >
+                    <a
+                      onClick={() => {
+                        setIsRegiestered(false);
+                      }}
+                    >
+                      Sign In
+                    </a>
+                  </span>
+                  <span className="text-xl text-amber-400"> / </span>
+                  <span
+                    style={{
+                      color: isRegiestered ? "rgb(251 191 36)" : "black",
+                      fontSize: "1.25rem",
+                      lineHeight: "1.75rem",
+                    }}
+                  >
+                    <a
+                      onClick={() => {
+                        setIsRegiestered(true);
+                      }}
+                    >
+                      Sign Up
+                    </a>
+                  </span>
+                </span>
+                <div className="grid place-items-center w-full mt-5 ml-20">
+                  <Form
+                    name="basic"
+                    layout="vertical"
+                    labelCol={{
+                      span: 8,
+                    }}
+                    wrapperCol={{
+                      span: 16,
+                    }}
+                    style={{
+                      maxWidth: 600,
+                      width: "100%",
+                    }}
+                    initialValues={{
+                      remember: true,
+                    }}
+                    onFinish={onFinish}
+                    onFinishFailed={onFinishFailed}
+                    autoComplete="off"
+                  >
+                    <Form.Item
+                      label="Email"
+                      name="username"
+                      rules={[
+                        {
+                          required: true,
+                          message: "Please input your email!",
+                        },
+                      ]}
+                    >
+                      <Input />
+                    </Form.Item>
 
-        <footer className="fixed bottom-0 left-0 z-20 w-full p-4 shadow md:flex md:items-center md:justify-between md:p-6 dark:bg-gray-800 dark:border-gray-600">
-          <span className="text-sm text-white sm:text-center dark:text-white">
-            © 2023{" "}
-            <a href="https://flowbite.com/" className="hover:underline">
-              Flowbite™
-            </a>
-            . All Rights Reserved.
-          </span>
-          <ul className="flex flex-wrap items-center mt-3 text-sm font-medium text-white dark:text-white sm:mt-0">
-            <li>
-              <a href="#" className="mr-4 hover:underline md:mr-6">
-                About
-              </a>
-            </li>
-            <li>
-              <a href="#" className="mr-4 hover:underline md:mr-6">
-                Privacy Policy
-              </a>
-            </li>
-            <li>
-              <a href="#" className="mr-4 hover:underline md:mr-6">
-                Licensing
-              </a>
-            </li>
-            <li>
-              <a href="#" className="hover:underline">
-                Contact
-              </a>
-            </li>
-          </ul>
-        </footer>
+                    <Form.Item
+                      label="Password"
+                      name="password"
+                      rules={[
+                        {
+                          required: true,
+                          message: "Please input your password!",
+                        },
+                      ]}
+                    >
+                      <Input.Password />
+                    </Form.Item>
+
+                    <Form.Item name="remember" valuePropName="checked">
+                      <Checkbox>Remember me</Checkbox>
+                    </Form.Item>
+
+                    <Form.Item>
+                      <Button
+                        type="primary"
+                        htmlType="submit"
+                        style={{
+                          backgroundColor: "rgb(251 191 36)",
+                        }}
+                        className="bg-amber-400"
+                      >
+                        Submit
+                      </Button>
+                    </Form.Item>
+                  </Form>
+                </div>
+              </div>
+            </div>
+          </Col>
+        </Row>
       </div>
     </motion.div>
   );
