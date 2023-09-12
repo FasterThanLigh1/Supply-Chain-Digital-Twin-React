@@ -41,7 +41,7 @@ function DigitalTwinPage() {
     console.log("Current user: ", currentUser);
     let data = sessionStorage.getItem("currentUser");
     console.log("Session user: ", data);
-    setSessionUser(data);
+    setSessionUser(currentUser);
     if (currentUser == null) return;
     api_fetchUserById(currentUser.id);
   }, []);
