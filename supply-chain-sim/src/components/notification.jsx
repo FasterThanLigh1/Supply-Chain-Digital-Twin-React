@@ -1,6 +1,7 @@
 import { Button, notification, Space } from "antd";
 import { useState } from "react";
 import { useEffect } from "react";
+import { MESSAGE_TYPE } from "../constants";
 const Notification = (props) => {
   const [api, contextHolder] = notification.useNotification();
   const [description, setDescription] = useState("Default");
@@ -12,12 +13,16 @@ const Notification = (props) => {
     openNotificationWithIcon("warning");
   }, [props.trigger]);
 
-  const openNotificationWithIcon = (type) => {
+  const openNotificationWithIcon = (
+    type = MESSAGE_TYPE.INFO,
+    msg = "Default",
+    duration = 30
+  ) => {
     if (description == "Default") return;
     api[type]({
-      message: "Notification Title",
+      message: msg,
       description: description,
-      duration: 30,
+      duration: duration,
     });
   };
   return <>{contextHolder}</>;

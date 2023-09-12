@@ -162,8 +162,6 @@ const { Message } = require("azure-iot-device");
 const { EventHubConsumerClient } = require("@azure/event-hubs");
 const { supabase } = require("./config/supabaseClient.js");
 
-// If you have access to the Event Hub-compatible connection string from the Azure portal, then
-// you can skip the Azure CLI commands above, and assign the connection string directly here.
 const eventHubConnectionString = `Endpoint=sb://ihsuprodsgres025dednamespace.servicebus.windows.net/;SharedAccessKeyName=iothubowner;SharedAccessKey=MVMEf3cd4a8kQFzWh6MmT+DKsq1F78ZDXbpDBvec2Ss=;EntityPath=iothub-ehub-demoiot-25131092-2791705379`;
 
 // Replace with your connection string and device ID
@@ -186,15 +184,37 @@ var printMessages = function (messages) {
   for (const message of messages) {
     console.log("Telemetry received: ");
 
-    if (message.body.type == "truck") {
-      console.log("Truck received");
-      console.log(message.body);
+    // if (message.body.type == "truck") {
+    //   console.log("Truck received");
+    //   api_updateVehicleById(message.body);
+    // }
+    // if (message.body.type == "milk-monitor") {
+    //   console.log("Milk monitor resceive", message.body.data.milk_temperature);
+    //   api_updateLiveTelemetry(message.body);
+    //   if (message.body.data.milk_temperature < 20) {
+    //     console.log("Print warning");
+    //     api_insertWarning(message.body, "temperature drop");
+    //   }
+    // }
+    // if (message.body.type == "sales-monitor") {
+    //   console.log("Sales monitor resceive");
+    //   api_updateLiveTelemetry(message.body);
+    // }
+
+    if (message.body.id == "sales_record") {
+      api_insertSales(message.body);
+    }
+    if (message.body.id == "truck_1") {
       api_updateVehicleById(message.body);
     }
-    if (message.body.type == "milk_monitor") {
-      console.log("Milk monitor resceive");
-      console.log(message.body);
-    }
+
+    console.log(message.body);
+    api_updateLiveTelemetry(message.body);
+    // const buffer = Buffer.from(message.body, "hex");
+    // const mesg = buffer.toString("utf-8");
+    // console.log(mesg);
+    // const jsonObject = JSON.parse(mesg);
+    // console.log(jsonObject.data);
     //console.log(message.body.telemetry.id);
     // console.log("Properties (set by device): ");
     // console.log(JSON.stringify(message.properties));
@@ -205,31 +225,95 @@ var printMessages = function (messages) {
 
     //api_updateLiveTelemetry(message.body);
 
-    console.log("");
+    console.log(" ");
   }
 };
 
+async function api_insertWarning(data, description) {
+  const { error } = await supabase.from("warning").insert({
+    description: description,
+    is_resolved: false,
+    participant_id: "dtmi:dtdl:Supplier;1",
+    iot_device_id: data.data.id,
+    data: data,
+  });
+  if (error) {
+    console.log("Error inserting warning", error);
+  }
+}
+
+async function api_insertSales(data) {
+  console.log("Updated data: ", data);
+  let participant_id = null;
+  if (data.id == "sales_record") {
+    participant_id = "dtmi:dtdl:Bakery1;1";
+  } else {
+    participant_id = "dtmi:dtdl:Bakery2;1";
+  }
+  const { error } = await supabase.from("sales").insert({
+    article: data.data.article,
+    quantity: data.data.quantity,
+    unit_price: data.data.unit_price,
+    ticket_number: data.data.ticket_number,
+    participant_id: participant_id,
+  });
+  if (error) {
+    console.log(error);
+  }
+}
+
 async function api_updateLiveTelemetry(data) {
+  console.log("Updated data: ", data);
+  let status = "OK";
+  let message = null;
+  if (data.id == "machine_1") {
+    if (data.data.oven_t < 350) {
+      status = "ERROR";
+      message = "BAKERY 1: MACHINE 1: oven temperature low";
+    }
+  }
   const { error } = await supabase
     .from("iot_devices")
     .update({
       data: data,
+      status: status,
+      error_message: message,
     })
-    .eq("id", "rasperry_1");
+    .eq("id", data.id);
+  if (error) {
+    console.log(error);
+  }
 }
 
 async function api_updateVehicleById(data) {
+  console.log("Truck: ", data);
+  const cargo = {
+    flour: 1000,
+    sugar: 1000,
+    eggs: 100,
+    butter: 2000,
+    milk: 2000,
+    salt: 1000,
+  };
   const { error } = await supabase
     .from("vehicle")
     .update({
-      longitude: data.longitude,
-      latitude: data.latitude,
-      temperature: data.temperature,
-      humidity: data.humidity,
-      cargo_weight: data.cargo_weight,
-      velocity: data.speed,
+      longitude: data.data.latitude,
+      latitude: data.data.longitude,
+      current_destination: data.data.destination,
+      temperature: data.data.temperature,
+      humidity: data.data.humidity,
+      shock_level: data.data.shock_level,
+      light_exposure: data.data.light_exposure,
+      door_status: data.data.door_status,
+      battery_level: data.data.battery_level,
+      connectivity: data.data.connectivity,
+      cargo: cargo,
     })
-    .eq("id", data.id);
+    .eq("name", data.id);
+  if (error) {
+    console.log(error);
+  }
 }
 
 // Open a connection to the IoT Hub
@@ -238,26 +322,6 @@ client.open((err) => {
     console.error("Error opening IoT Hub connection:", err);
   } else {
     console.log("IoT Hub connection opened");
-
-    // Send a message to the IoT device
-    /* const message = new Message(
-      JSON.stringify({
-        data: "Hello from the cloud!",
-      })
-    );
-    console.log("Sending message:", message.getData());
-    client.sendEvent(message, (err, res) => {
-      if (err) {
-        console.error("Error sending message:", err);
-      } else {
-        console.log(
-          "Message sent to IoT device with status:",
-          res.constructor.name
-        );
-      }
-      client.close();
-    }); */
-
     // Listen for incoming messages from the device
     client.on("message", (msg) => {
       console.log("Received message from device:", msg.getData().toString());
@@ -267,7 +331,6 @@ client.open((err) => {
 
 async function main() {
   console.log("IoT Hub Quickstarts - Read device to cloud messages.");
-
   // If using websockets, uncomment the webSocketOptions below
   // If using proxy, then set `webSocketConstructorOptions` to { agent: proxyAgent }
   // You can also use the `retryOptions` in the client options to configure the retry policy

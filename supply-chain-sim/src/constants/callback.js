@@ -182,11 +182,16 @@ export const runShipment = async (step, id, obj, onFinishCallBack, cargo) => {
   }, timePerStep);
 };
 
-export const openNotificationWithIcon = (message, description, type) => {
+export const openNotificationWithIcon = (
+  message,
+  description,
+  type,
+  duration = 3
+) => {
   notification[type]({
     message: message,
     description: description,
-    duration: 3,
+    duration: duration,
   });
 };
 

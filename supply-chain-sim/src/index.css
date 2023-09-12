@@ -12,6 +12,10 @@
 }
  */
 
+a:hover {
+  color: rgb(251 191 36);
+}
+
 img {
   max-width: 100%;
   max-height: 100%;
@@ -3062,6 +3066,7 @@ section.ant-layout.ant-layout-has-sider.layouFt-dashboard.layout-profile
 
 .mapbox-gl-canvas {
   right: 0;
+  height: 100%;
 }
 
 .customer-footer {
@@ -3096,7 +3101,7 @@ section.ant-layout.ant-layout-has-sider.layouFt-dashboard.layout-profile
 }
 
 .realtime-map-container {
-  height: 85vh;
+  height: 100%;
 }
 
 .marker-supplier {
@@ -3185,3 +3190,29 @@ section.ant-layout.ant-layout-has-sider.layouFt-dashboard.layout-profile
   margin: 12px;
   border-radius: 4px;
 }
+
+.ant-checkbox-inner {
+  background-color: rgb(251 191 36) !important;
+  border-color: transparent !important;
+}
+
+/* .ant-menu-item-selected {
+  background-color: white !important;
+  color: rgb(251 191 36) !important;
+}
+
+.ant-menu-item {
+  color: white !important;
+}
+*/
+.ant-menu-item-active {
+  color: white !important;
+  text-decoration: none !important;
+}
+.ant-card-head {
+  background-color: rgb(251 191 36) !important;
+  color: white !important;
+}
+/* .react-bpmn-diagram-container {
+  height: 100vh !important;
+} */

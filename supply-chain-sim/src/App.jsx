@@ -8,14 +8,18 @@ import { selectUser } from "./features/userSlice";
 function App() {
   const dispatch = useDispatch();
   const currentUser = useSelector(selectUser);
+  const [sessionUser, setSessionUser] = useState(null);
 
   useEffect(() => {
     console.log("Current user: ", currentUser);
+    let data = sessionStorage.getItem("currentUser");
+    console.log("Session user: ", data);
+    setSessionUser(data);
   }, []);
 
   return (
     <div>
-      {currentUser !== null ? <Navigation /> : null}
+      {sessionUser !== null ? <Navigation /> : null}
       <AnimatedRoutes />
     </div>
   );

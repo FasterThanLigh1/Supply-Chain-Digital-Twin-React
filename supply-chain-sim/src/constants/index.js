@@ -99,8 +99,11 @@ export const SUPABASE_TABLE = {
   INVENTORY: "inventory",
   WARNING_LIST: "warning",
   IOT_DEVICES: "iot_devices",
+  IOT_DEVICES_HISTORY: "iot_history_data",
   LIVE_TELEMETRY: "live_telemetry",
   LIVE_PROCESS: "live_process",
+  SUPPLIER: "supplier",
+  SALES: "sales",
   VIEW: {
     GET_DATA_ORDER_BY_DATE: "get_participants_data_order_by_date",
   },
@@ -135,4 +138,11 @@ export const UI_DATA = {
   SELECT_PARTICIPANT_ID: null,
   SELECT_BPMN_TASK: [],
   SELECT_CANVAS: null,
+};
+
+//UI COLOR
+export const COLOR = {
+  ORANGE: "rgb(251 191 36)", //AMBER-400
+  WHITE: "#ffffff",
+  GRAY: "#c4c4c4",
 };

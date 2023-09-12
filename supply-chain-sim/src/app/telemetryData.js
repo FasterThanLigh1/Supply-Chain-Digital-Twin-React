@@ -48,6 +48,19 @@
     "type": "shipping-monitor",
     "data": {
         "transport_id": "abc123",
+        "is_active": true,
         "start_date": "2019-01-25T02:00:00.000Z"
+    }
+},{
+    "type": "vehicle-monitor",
+    "data": {
+        "temperature": float,
+        "humidity": float,
+        "longitude": float,
+        "latitude": float,
+        "type": string,
+        "id": string,
+        "cargo_weight": float,
+        "velocity": float
     }
 }

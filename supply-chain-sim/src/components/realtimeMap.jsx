@@ -8,6 +8,7 @@ import {
   mapaboxAcessToken,
   BPMN_TYPE,
   UI_DATA,
+  MESSAGE_TYPE,
 } from "../constants";
 import {
   Button,
@@ -21,6 +22,7 @@ import {
   Tag,
   Tabs,
   Card,
+  List,
 } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 import { selectChildTwinArray, setChildTwinArray } from "../features/dtdlSlice";
@@ -29,7 +31,7 @@ import Chart from "react-apexcharts";
 import ReactApexChart from "react-apexcharts";
 import supabase from "../config/supabaseClient";
 import { selectTruckDataArray } from "../features/truckSlice";
-import { getRoute } from "../constants/callback";
+import { getRoute, openNotificationWithIcon } from "../constants/callback";
 import Notification from "./notification";
 import Modeler from "bpmn-js/lib/Viewer";
 import KeyboardMoveModule from "diagram-js/lib/navigation/keyboard-move";
@@ -40,9 +42,61 @@ import "bpmn-js/dist/assets/bpmn-font/css/bpmn-embedded.css";
 import axios from "axios";
 import BootstrapModal from "react-bootstrap/Modal";
 import TruckModalCard from "./truckModalCard";
+import ReactBpmn from "react-bpmn";
 
 mapboxgl.accessToken = mapaboxAcessToken;
+const { Title } = Typography;
 
+const inventoryColumns = [
+  {
+    title: "Id",
+    dataIndex: "id",
+    key: "id",
+  },
+  {
+    title: "Product",
+    dataIndex: "product_name",
+    key: "product_name",
+  },
+  {
+    title: "Quantity",
+    dataIndex: "quantity",
+    key: "quantity",
+  },
+];
+
+const salesColumns = [
+  {
+    title: "Id",
+    dataIndex: "id",
+    key: "id",
+  },
+  {
+    title: "Date",
+    dataIndex: "created_at",
+    key: "created_at",
+  },
+  {
+    title: "Ticket Number",
+    dataIndex: "ticket_number",
+    key: "ticket_number",
+  },
+  {
+    title: "Article",
+    dataIndex: "article",
+    key: "article",
+  },
+  {
+    title: "Quantity",
+    dataIndex: "quantity",
+    key: "quantity",
+  },
+  {
+    title: "Price",
+    dataIndex: "unit_price",
+    key: "unit_price",
+  },
+];
 const columns1 = [
   {
     title: "Id",
@@ -61,83 +115,6 @@ const columns1 = [
   },
 ];
 
-const columns2 = [
-  {
-    title: "Id",
-    dataIndex: "id",
-    key: "id",
-  },
-  {
-    title: "Name",
-    dataIndex: "name",
-    key: "name",
-  },
-  {
-    title: "Quantity",
-    dataIndex: "quantity",
-    key: "quantity",
-  },
-];
-
-const columns3 = [
-  {
-    title: "Id",
-    dataIndex: "id",
-    key: "id",
-  },
-  {
-    title: "Created Date",
-    dataIndex: "created_at",
-    key: "created_at",
-  },
-  {
-    title: "Description",
-    dataIndex: "description",
-    key: "description",
-  },
-  {
-    title: "Participant Id",
-    dataIndex: "participant_id",
-    key: "participant_id",
-  },
-  {
-    title: "status",
-    dataIndex: "is_resolved",
-    key: "is_resolved",
-    render: (status) => {
-      let color = "volcano";
-      let text = "UNRESOLVED";
-      if (status == true) {
-        color = "green";
-        text = "RESOLVED";
-      }
-      return (
-        <Tag color={color} key={status}>
-          {text.toUpperCase()}
-        </Tag>
-      );
-    },
-  },
-];
-
-const items = [
-  {
-    key: "1",
-    label: `Tab 1`,
-    children: `Content of Tab Pane 1`,
-  },
-  {
-    key: "2",
-    label: `Tab 2`,
-    children: `Content of Tab Pane 2`,
-  },
-  {
-    key: "3",
-    label: `Tab 3`,
-    children: `Content of Tab Pane 3`,
-  },
-];
-
 function RealtimeMap() {
   const thisChildTwinArray = useSelector(selectChildTwinArray);
   const thisTruckDataArray = useSelector(selectTruckDataArray);
@@ -148,10 +125,10 @@ function RealtimeMap() {
   const map = useRef(null);
   const [api_participantList, api_setParticipantList] = useState([]);
   const [fetchError, setfetchError] = useState(null);
-  const [zoom, setZoom] = useState(9);
+  const [zoom, setZoom] = useState(13.81);
   const [geojsonPlaces, setGeojsonPlaces] = useState(null);
-  const [lng, setLng] = useState(106.505);
-  const [lat, setLat] = useState(10.9374);
+  const [lng, setLng] = useState(2.329);
+  const [lat, setLat] = useState(48.8487);
 
   const [salesSeries, setSalesSeries] = useState([]);
   const [salesCategories, setSalesCategories] = useState([]);
@@ -166,6 +143,12 @@ function RealtimeMap() {
   const [selectCustomer, setSelectCustomer] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [inventory, setInventory] = useState([]);
+  const [selectParticipant, setSelectParticipant] = useState(null);
+  const [machineAttributes, setMachineAttributes] = useState([]);
+  const [salesData, setSalesData] = useState([]);
+  const [participantId, setParticipantId] = useState(null);
+  const [isStoreModalOpen, setIsStoreModalOpen] = useState(false);
+  const [storeProduct, setStoreProduct] = useState(null);
 
   //SELECT TRUCK MODAL ATTRIBUTE
   const [truckName, setTruckName] = useState(null);
@@ -181,6 +164,8 @@ function RealtimeMap() {
   const [cargoTemperature, setCargoTemperature] = useState(null);
   const [cargoHumidity, setCargoHumidity] = useState(null);
   const [truckCargo, setTruckCargo] = useState(null);
+
+  const [truckAttributeData, setTruckAttributeData] = useState(null);
 
   //ORDER ATTRIBUTE
   const [orderData, setOrderData] = useState([]);
@@ -215,6 +200,7 @@ function RealtimeMap() {
   const [taskIotData, setTaskIotData] = useState(null);
   const [taskStatus, setTaskStatus] = useState(null);
   const [taskIotType, setTaskIotType] = useState(null);
+  const [participantsIoTDevices, setParticipantsIoTDevices] = useState([]);
 
   useEffect(() => {
     let secTimer = setInterval(() => {
@@ -309,27 +295,50 @@ function RealtimeMap() {
     console.log(id);
     setIsCargoModalOpen(true);
   };
+  const showStoreModal = (id) => {
+    console.log("Open store: ", id);
+    setIsStoreModalOpen(true);
+    api_fetchStoreProduct(id);
+  };
 
   //On select participant marker
   const showModal = (id) => {
-    setIsModalOpen(true);
-    console.log("PARTICIPANT: ", SUPABASE_DATA.ACTIVE_LIVE_PARTICIPANTS);
-    for (let i = 0; i < SUPABASE_DATA.ACTIVE_LIVE_PARTICIPANTS.length; i++) {
-      console.log(SUPABASE_DATA.ACTIVE_LIVE_PARTICIPANTS[i]);
-      if (SUPABASE_DATA.ACTIVE_LIVE_PARTICIPANTS[i].id == id) {
-        setModalName(SUPABASE_DATA.ACTIVE_LIVE_PARTICIPANTS[i].name);
-        setModalId(id);
-        setSelectAddress(SUPABASE_DATA.ACTIVE_LIVE_PARTICIPANTS[i].address);
-        setDescription(SUPABASE_DATA.ACTIVE_LIVE_PARTICIPANTS[i].description);
-        setSelectCustomer(SUPABASE_DATA.ACTIVE_LIVE_PARTICIPANTS[i].target);
-        setSelectSupplier(SUPABASE_DATA.ACTIVE_LIVE_PARTICIPANTS[i].supplier);
-        diagramSet(SUPABASE_DATA.ACTIVE_LIVE_PARTICIPANTS[i].bpmn);
-      }
+    if (id == "dtmi:dtdl:Bakery1;1" || id == "dtmi:dtdl:Bakery2;1") {
+      setIsModalOpen(true);
+      setSelectParticipant(true);
+      setParticipantId(id);
+      api_fetchIoTData(id);
+      api_fetchSales(id);
+    } else if (id == "dtmi:dtdl:Material1;1" || id == "dtmi:dtdl:Material2;1") {
+      showStoreModal(id);
     }
 
-    api_fetchInvetoryById(id);
-    api_fetchParticipantDataById(id);
+    console.log(id);
+    // for (let i = 0; i < SUPABASE_DATA.ACTIVE_LIVE_PARTICIPANTS.length; i++) {
+    //   console.log(SUPABASE_DATA.ACTIVE_LIVE_PARTICIPANTS[i]);
+    //   if (SUPABASE_DATA.ACTIVE_LIVE_PARTICIPANTS[i].id == id) {
+    //     setModalName(SUPABASE_DATA.ACTIVE_LIVE_PARTICIPANTS[i].name);
+    //     setModalId(id);
+    //     setSelectAddress(SUPABASE_DATA.ACTIVE_LIVE_PARTICIPANTS[i].address);
+    //     setDescription(SUPABASE_DATA.ACTIVE_LIVE_PARTICIPANTS[i].description);
+    //     setSelectCustomer(SUPABASE_DATA.ACTIVE_LIVE_PARTICIPANTS[i].target);
+    //     setSelectSupplier(SUPABASE_DATA.ACTIVE_LIVE_PARTICIPANTS[i].supplier);
+    //     diagramSet(SUPABASE_DATA.ACTIVE_LIVE_PARTICIPANTS[i].bpmn);
+    //   }
+    // }
+
+    // api_fetchInvetoryById(id);
+    // api_fetchParticipantDataById(id);
   };
+
+  useEffect(() => {
+    const temp = participantsIoTDevices.filter((e) =>
+      e.id.startsWith("machine_")
+    );
+    console.log("New machine data: ", temp);
+    setMachineAttributes(temp);
+  }, [participantsIoTDevices]);
+
   const handleOk = () => {
     setIsModalOpen(false);
   };
@@ -355,7 +364,6 @@ function RealtimeMap() {
     console.log("START FETCH");
     api_fetchParticipantList();
     api_fetchProducData();
-
     supabase
       .channel("any")
       .on("postgres_changes", { event: "*", schema: "*" }, (payload) => {
@@ -364,6 +372,8 @@ function RealtimeMap() {
         //VEHICLE CHANGES
         if (payload.table == SUPABASE_TABLE.VEHICLE) {
           adjustTruckMarker(payload.new);
+          console.log("Truck changed! ", payload.new);
+          setTruckAttributeData(payload.new);
         }
         //WARNING CHANGES
         else if (payload.table == SUPABASE_TABLE.WARNING_LIST) {
@@ -375,7 +385,39 @@ function RealtimeMap() {
         }
         //IOT CHANGES
         else if (payload.table == SUPABASE_TABLE.IOT_DEVICES) {
-          setTaskIotData(payload.new.data);
+          setTaskIotData(payload.new.data.data);
+          if (payload.new.status == "ERROR") {
+            // setTrigger(payload.new);
+            openNotificationWithIcon(
+              "WARNING",
+              payload.new.error_message,
+              MESSAGE_TYPE.ERROR,
+              10
+            );
+          }
+          setParticipantsIoTDevices((prev) => {
+            const tempArr = [...prev];
+            console.log(payload.new.data.data);
+            for (let i = 0; i < tempArr.length; i++) {
+              console.log(
+                "Current index: ",
+                tempArr[i],
+                " new id: ",
+                payload.new.id
+              );
+              if (tempArr[i].id == payload.new.id) {
+                console.log("yes ", payload.new.data);
+                tempArr[i].data = payload.new.data;
+              } else {
+                console.log("no");
+              }
+            }
+            console.log("New array: ", tempArr);
+            return tempArr;
+          });
+          // if (payload.new.data.id == "sales_record") {
+          //   api_fetchSales(participantId);
+          // }
         }
         //PROCESS CHANGES
         else if (payload.table == SUPABASE_TABLE.LIVE_PROCESS) {
@@ -519,6 +561,7 @@ function RealtimeMap() {
       console.log(error);
     } else {
       console.log(" SELECTED VEHICLE: ", data);
+      setTruckAttributeData(data[0]);
       //api_fecthLatestTelemetry(data[0].iot_device_id);
       console.log("NEW DEVICE ID: ", data[0].iot_device_id);
       setSelectDeviceId(data[0].iot_device_id);
@@ -538,8 +581,13 @@ function RealtimeMap() {
       setTruckCargo(data[0].cargo_id);
 
       setfetchError(null);
+      api_fetchIoTDataById(data[0].iot_device_id);
     }
   };
+
+  useEffect(() => {
+    console.log("Truck attribute: ", truckAttributeData);
+  }, [truckAttributeData]);
 
   //FETCH PROCESS
   const api_fecthTaskById = async (id) => {
@@ -592,6 +640,22 @@ function RealtimeMap() {
   };
 
   //FETCH INVENTORY DATA
+
+  const api_fetchInventory = async (id) => {
+    const { data, error } = await supabase
+      .from(SUPABASE_TABLE.INVENTORY)
+      .select()
+      .eq("participant_id", id);
+    if (error) {
+      setfetchError(error);
+      console.log(error);
+    } else {
+      console.log("INVENTORY: ", data);
+      setInventory(data);
+      setfetchError(null);
+    }
+  };
+
   const api_fetchInvetoryById = async (id) => {
     const { data, error } = await supabase
       .from(SUPABASE_TABLE.INVENTORY)
@@ -714,6 +778,68 @@ function RealtimeMap() {
     }
   };
 
+  //FETCH STORE PRODUCT LIST
+  const api_fetchStoreProduct = async (id) => {
+    const { data, error } = await supabase
+      .from(SUPABASE_TABLE.SUPPLIER)
+      .select()
+      .eq("store", id);
+    if (error) {
+      setfetchError(error);
+      console.log(error);
+    } else {
+      console.log("IOT devices", data);
+      setStoreProduct(data);
+    }
+  };
+
+  //FECTH IOT DEVICES DATA
+  const api_fetchIoTData = async (id) => {
+    console.log("IOT DEVICES", id);
+    const { data, error } = await supabase
+      .from(SUPABASE_TABLE.IOT_DEVICES)
+      .select()
+      .eq("name", id);
+    if (error) {
+      setfetchError(error);
+      console.log(error);
+    } else {
+      console.log("IOT devices", data);
+      setParticipantsIoTDevices(data);
+    }
+  };
+  const api_fetchIoTDataById = async (id) => {
+    console.log("IOT DEVICES BY ID", id);
+    const { data, error } = await supabase
+      .from(SUPABASE_TABLE.IOT_DEVICES)
+      .select()
+      .eq("id", id);
+    if (error) {
+      setfetchError(error);
+      console.log(error);
+    } else {
+      console.log("IOT devices", data);
+      setParticipantsIoTDevices(data);
+    }
+  };
+
+  //FETCH SALES DATA
+  const api_fetchSales = async (id) => {
+    console.log("Sales", id);
+    const { data, error } = await supabase
+      .from(SUPABASE_TABLE.SALES)
+      .select()
+      .eq("participant_id", id)
+      .order("created_at", { ascending: false });
+    if (error) {
+      setfetchError(error);
+      console.log(error);
+    } else {
+      console.log("Sales: ", data);
+      setSalesData(data);
+    }
+  };
+
   //FECTH LATEST TELEMETRY DATA
   const api_fecthLatestTelemetry = async (deviceId) => {
     console.log(deviceId);
@@ -816,18 +942,30 @@ function RealtimeMap() {
     for (let i = 0; i < api_participantList.length; i++) {
       if (api_participantList[i].supplier) {
         //There is a supplier list
-        console.log(api_participantList[i].supplier[0]);
-        const targetSupplier = api_participantList.find(
-          (e) => e.id == api_participantList[i].supplier[0]
-        );
-        addLine(
-          [api_participantList[i].longitude, api_participantList[i].latitude],
-          [targetSupplier.longitude, targetSupplier.latitude],
-          "route" +
-            api_participantList[i].id.toString() +
-            "_" +
-            targetSupplier.id.toString()
-        );
+        for (let j = 0; j < api_participantList[i].supplier.length; j++) {
+          console.log(api_participantList[i].supplier[j]);
+          const targetSupplier = api_participantList.find(
+            (e) => e.id == api_participantList[i].supplier[j]
+          );
+          addLine(
+            [api_participantList[i].longitude, api_participantList[i].latitude],
+            [targetSupplier.longitude, targetSupplier.latitude],
+            "route" +
+              api_participantList[i].id.toString() +
+              "_" +
+              targetSupplier.id.toString()
+          );
+        }
+
+        // getRoute(
+        //   [api_participantList[i].longitude, api_participantList[i].latitude],
+        //   [targetSupplier.longitude, targetSupplier.latitude],
+        //   "route" +
+        //     api_participantList[i].id.toString() +
+        //     "_" +
+        //     targetSupplier.id.toString(),
+        //   map
+        // );
       }
     }
     const geoJsonPlaces = createGeoJsonData(api_participantList);
@@ -1180,8 +1318,8 @@ function RealtimeMap() {
   ];
 
   return (
-    <div>
-      <Row>
+    <div className="h-screen">
+      {/* <Row className="h-full">
         <Col span={6}>
           <Row>
             <Col span={24}>
@@ -1217,28 +1355,139 @@ function RealtimeMap() {
             </Col>
           </Row>
         </Col>
-        <Col span={18}>
-          <div ref={mapContainer} className="realtime-map-container">
-            <Space direction="vertical" className="absolute z-40 w-69 left-0">
-              <Typography className="bg-sky-950 pt-2 pb-2 pl-2 pr-2 rounded-lg text-white">
-                Lng: {lng} | Lat: {lat} | Zoom: {zoom}
-              </Typography>
-              <Typography className="bg-sky-950 pt-2 pb-2 pl-2 pr-2 rounded-lg text-white">
-                Date Time: {localeTime}
-              </Typography>
-            </Space>
+        <Col span={18}> */}
+      <div ref={mapContainer} className="realtime-map-container">
+        <Space direction="vertical" className="absolute z-40 w-69 left-0">
+          <Typography className="bg-amber-400 mt-2 ml-2 pt-2 pb-2 pl-2 pr-2 rounded-lg text-white">
+            Lng: {lng} | Lat: {lat} | Zoom: {zoom}
+          </Typography>
+          <Typography className="bg-amber-400 ml-2 pb-2 pl-2 pr-2 rounded-lg text-white">
+            Date Time: {localeTime}
+          </Typography>
+        </Space>
+      </div>
+      <Modal
+        title={modalName}
+        open={isModalOpen}
+        onOk={handleOk}
+        onCancel={handleCancel}
+        width={1000}
+      >
+        <h1>
+          <div style={{ fontWeight: "bold" }}>AVAILABLE IOT DEVICES: </div>
+          <Row gutter={16}>
+            {participantsIoTDevices.map((e) => {
+              return (
+                <Col span={8}>
+                  <Card title={e.id} bordered={false}>
+                    <div className="font-bold">Latest data:</div>
+                    <div>{JSON.stringify(e.data)}</div>
+                  </Card>
+                </Col>
+              );
+            })}
+          </Row>
+          <div className="font-bold mt-4 mb-4">
+            COMMERCIAL BAKING MACHINE STATUS:
           </div>
-          <Modal
-            title={modalName}
-            open={isModalOpen}
-            onOk={handleOk}
-            onCancel={handleCancel}
-            width={1000}
+          <div className="rounded border-4 mb-4 mt-4 h-64">
+            <ReactBpmn
+              url="/public/diagram1.bpmn"
+              onShown={() => {
+                console.log("show");
+              }}
+              onLoading={() => {
+                console.log("Loading");
+              }}
+              onError={() => {
+                console.log("eroro");
+              }}
+            />
+          </div>
+          <List
+            size="large"
+            header={<div className="text-xl font-bold">Machine attribute</div>}
+            bordered
           >
-            <h1>
-              <div style={{ fontWeight: "bold" }}>INFORMATION: </div>
-            </h1>
-            <div>
+            <List.Item>
+              State:{" "}
+              {machineAttributes.length > 0
+                ? machineAttributes[0].data.data.state
+                : null}
+            </List.Item>
+            <List.Item>
+              Oven temperature:{" "}
+              {machineAttributes.length > 0
+                ? machineAttributes[0].data.data.oven_t
+                : null}
+            </List.Item>
+            <List.Item>
+              Proofing temperature:{" "}
+              {machineAttributes.length > 0
+                ? machineAttributes[0].data.data.proofing_t
+                : null}
+            </List.Item>
+            <List.Item>
+              Ambient temperature:{" "}
+              {machineAttributes.length > 0
+                ? machineAttributes[0].data.data.ambient_t
+                : null}
+            </List.Item>
+            <List.Item>
+              Motor speed:{" "}
+              {machineAttributes.length > 0
+                ? machineAttributes[0].data.data.motor_speed
+                : null}
+            </List.Item>
+            <List.Item>
+              Power consumption:{" "}
+              {machineAttributes.length > 0
+                ? machineAttributes[0].data.data.power_consumption
+                : null}
+            </List.Item>
+            <List.Item>
+              Dough weight:{" "}
+              {machineAttributes.length > 0
+                ? machineAttributes[0].data.data.dough_weight
+                : null}
+            </List.Item>
+            <List.Item>
+              Dough volume:{" "}
+              {machineAttributes.length > 0
+                ? machineAttributes[0].data.data.dough_volume
+                : null}
+            </List.Item>
+            <List.Item>
+              Proof time:{" "}
+              {machineAttributes.length > 0
+                ? machineAttributes[0].data.data.proof_time
+                : null}
+            </List.Item>
+            <List.Item>
+              Baking time:{" "}
+              {machineAttributes.length > 0
+                ? machineAttributes[0].data.data.baking_time
+                : null}
+            </List.Item>
+            <List.Item>
+              Baking temperature:{" "}
+              {machineAttributes.length > 0
+                ? machineAttributes[0].data.data.baking_temperature
+                : null}
+            </List.Item>
+            <List.Item>
+              Quantity produce:{" "}
+              {machineAttributes.length > 0
+                ? machineAttributes[0].data.data.quantity_produced
+                : null}
+            </List.Item>
+          </List>
+          <div className="font-bold mt-4">SALES</div>
+          <Table columns={salesColumns} dataSource={salesData} />
+          <div className="font-bold mt-4">INVENTORY</div>
+          <Table columns={inventoryColumns} dataSource={inventory} />
+        </h1>
+        {/* <div>
               <span style={{ fontWeight: "bold" }}>Business Process: </span>
               <Button
                 onClick={() => {
@@ -1307,30 +1556,118 @@ function RealtimeMap() {
                 height="350"
                 width="800"
               />
-            </div>
-            <div>
-              <ReactApexChart
-                options={options}
-                series={series}
-                type="line"
-                height="350"
-                width="800"
-              />
-            </div>
-          </Modal>
-          <Modal
-            title={truckName}
-            open={truckModalOpen}
-            onOk={handleTruckOk}
-            onCancel={handleTruckCancel}
-            width={1000}
-          >
-            <h1>
-              <span style={{ fontWeight: "bold", fontSize: "20px" }}>
-                INFORMATION:{" "}
-              </span>
-            </h1>
-            <div>
+            </div> */}
+      </Modal>
+      <Modal
+        open={isStoreModalOpen}
+        onOk={() => {
+          setIsStoreModalOpen(false);
+        }}
+        onCancel={() => {
+          setIsStoreModalOpen(false);
+        }}
+        width={500}
+      >
+        <h1>
+          <div className="text-3xl font-bold">SALES GOODS: </div>
+          <div>
+            {storeProduct != null
+              ? storeProduct.map((product) => {
+                  return (
+                    <Tag className="text-2xl mt-4" color="green">
+                      {product.product_name}
+                    </Tag>
+                  );
+                })
+              : null}
+          </div>
+        </h1>
+      </Modal>
+      <Modal
+        title={truckName}
+        open={truckModalOpen}
+        onOk={handleTruckOk}
+        onCancel={handleTruckCancel}
+        width={1000}
+      >
+        <h1>
+          <div style={{ fontWeight: "bold" }}>AVAILABLE IOT DEVICES: </div>
+          <Row gutter={16}>
+            {participantsIoTDevices.map((e) => {
+              return (
+                <Col span={8}>
+                  <Card title={e.id} bordered={false}>
+                    <div className="font-bold">Latest data:</div>
+                    <div>{JSON.stringify(e.data)}</div>
+                  </Card>
+                </Col>
+              );
+            })}
+          </Row>
+        </h1>
+        <List
+          size="large"
+          header={<div style={{ fontWeight: "bold" }}>TRUCK ATTRIBUTE</div>}
+          bordered
+        >
+          <List.Item>
+            Longitude:{" "}
+            {truckAttributeData != null ? truckAttributeData.longitude : null}
+          </List.Item>
+          <List.Item>
+            Latitude:{" "}
+            {truckAttributeData != null ? truckAttributeData.latitude : null}
+          </List.Item>
+          <List.Item>
+            Temperature:{" "}
+            {truckAttributeData != null ? truckAttributeData.temperature : null}
+          </List.Item>
+          <List.Item>
+            Humidity:{" "}
+            {truckAttributeData != null ? truckAttributeData.humidity : null}
+          </List.Item>
+          <List.Item>
+            Shock level:{" "}
+            {truckAttributeData != null ? truckAttributeData.shock_level : null}
+          </List.Item>
+          <List.Item>
+            Light exposure:{" "}
+            {truckAttributeData != null
+              ? truckAttributeData.light_exposure
+              : null}
+          </List.Item>
+          <List.Item>
+            Door status:{" "}
+            {truckAttributeData != null
+              ? truckAttributeData.door_status.toString()
+              : false.toString()}
+          </List.Item>
+          <List.Item>
+            Battery level:{" "}
+            {truckAttributeData != null
+              ? truckAttributeData.battery_level
+              : null}
+          </List.Item>
+          <List.Item>
+            Connectivity:{" "}
+            {truckAttributeData != null
+              ? truckAttributeData.connectivity.toString()
+              : null}
+          </List.Item>
+          <List.Item>
+            Destination:{" "}
+            {truckAttributeData != null
+              ? truckAttributeData.current_destination
+              : null}
+          </List.Item>
+          <List.Item>
+            Cargo:{" "}
+            {truckAttributeData != null
+              ? JSON.stringify(truckAttributeData.cargo)
+              : null}
+          </List.Item>
+        </List>
+        {/* <div>
               <span style={{ fontWeight: "bold", fontSize: "15px" }}>
                 NAME:{" "}
               </span>{" "}
@@ -1390,242 +1727,232 @@ function RealtimeMap() {
               title={"HUMIDITY"}
               data={cargoHumidity}
               unit={"f"}
-            />
-          </Modal>
-          <Modal
-            title="Cargo"
-            open={isCargoModalOpen}
-            onOk={() => {
-              setIsCargoModalOpen(false);
-            }}
-            onCancel={() => {
-              setIsCargoModalOpen(false);
-            }}
-            width={1000}
-          >
-            <Table dataSource={cargoProductData} columns={columns1} />
-          </Modal>
-          <Modal
-            title="Business Process"
-            open={openBpmnModal}
-            onOk={() => {
-              setOpenBpmnModal(false);
-            }}
-            onCancel={() => {
-              setOpenBpmnModal(false);
-            }}
-            width={1000}
-          >
-            <div
-              id="container"
-              style={{
-                border: "1px solid #000000",
-                height: "400px",
-                width: "100%",
-                margin: "auto",
-                zIndex: 100,
-              }}
-            ></div>
-          </Modal>
-          <Modal
-            title={taskName}
-            open={openTaskModal}
-            onOk={() => {
-              setOpenTaskModal(false);
-            }}
-            onCancel={() => {
-              setOpenTaskModal(false);
-            }}
-            width={1000}
-          >
-            <h1>
-              <span style={{ fontWeight: "bold", fontSize: "20px" }}>
-                INFORMATION:{" "}
-              </span>
-            </h1>
+            /> */}
+      </Modal>
+      <Modal
+        title="Cargo"
+        open={isCargoModalOpen}
+        onOk={() => {
+          setIsCargoModalOpen(false);
+        }}
+        onCancel={() => {
+          setIsCargoModalOpen(false);
+        }}
+        width={1000}
+      >
+        <Table dataSource={cargoProductData} columns={columns1} />
+      </Modal>
+      <Modal
+        title="Business Process"
+        open={openBpmnModal}
+        onOk={() => {
+          setOpenBpmnModal(false);
+        }}
+        onCancel={() => {
+          setOpenBpmnModal(false);
+        }}
+        width={1000}
+      >
+        <div
+          id="container"
+          style={{
+            border: "1px solid #000000",
+            height: "400px",
+            width: "100%",
+            margin: "auto",
+            zIndex: 100,
+          }}
+        ></div>
+      </Modal>
+      <Modal
+        title={taskName}
+        open={openTaskModal}
+        onOk={() => {
+          setOpenTaskModal(false);
+        }}
+        onCancel={() => {
+          setOpenTaskModal(false);
+        }}
+        width={1000}
+      >
+        <h1>
+          <span style={{ fontWeight: "bold", fontSize: "20px" }}>
+            INFORMATION:{" "}
+          </span>
+        </h1>
+        <div>
+          <span style={{ fontWeight: "bold", fontSize: "15px" }}>NAME: </span>{" "}
+          {taskName}
+        </div>
+        <div>
+          <span style={{ fontWeight: "bold", fontSize: "15px" }}>ID: </span>{" "}
+          {taskId}
+        </div>
+        <div>
+          <span style={{ fontWeight: "bold", fontSize: "15px" }}>STATUS: </span>{" "}
+          {taskStatus}
+        </div>
+        <div>
+          <span style={{ fontWeight: "bold", fontSize: "20px" }}>DATA: </span>{" "}
+        </div>
+        <div>
+          <span style={{ fontWeight: "bold", fontSize: "15px" }}>
+            IOT DEVICE ID:{" "}
+          </span>{" "}
+          {taskIotId}
+        </div>
+        <div>
+          <span style={{ fontWeight: "bold", fontSize: "15px" }}>DATA: </span>{" "}
+          {taskIotType == SUPABASE_TABLE.IOT_DEVICE_TYPE.MILK_MONITOR ? (
             <div>
-              <span style={{ fontWeight: "bold", fontSize: "15px" }}>
-                NAME:{" "}
-              </span>{" "}
-              {taskName}
+              <TruckModalCard
+                title={"MILK YIELD TOTAL"}
+                data={taskIotData.milk_yield_total}
+                unit={"litres"}
+              />
+              <TruckModalCard
+                title={"MILK CONDUCTIVITY"}
+                data={taskIotData.milk_conductivity}
+                unit={"litres"}
+              />
+              <TruckModalCard
+                title={"MILK TEMPERATURE"}
+                data={taskIotData.milk_temperature}
+                unit={"C"}
+              />
+              <TruckModalCard
+                title={"FAT CONTENT"}
+                data={taskIotData.fat_content}
+                unit={"C"}
+              />
+              <TruckModalCard
+                title={"PROTEIN CONTENT"}
+                data={taskIotData.protein_content}
+                unit={"C"}
+              />
+              <TruckModalCard
+                title={"PRODUCT DATE"}
+                data={taskIotData.product_date}
+                unit={""}
+              />
             </div>
+          ) : taskIotType == SUPABASE_TABLE.IOT_DEVICE_TYPE.PACKAGE_MONITOR ? (
             <div>
-              <span style={{ fontWeight: "bold", fontSize: "15px" }}>ID: </span>{" "}
-              {taskId}
+              <TruckModalCard
+                title={"PACKAGE COUNT TOTAL"}
+                data={taskIotData.package_count_total}
+                unit={"box"}
+              />
+              <TruckModalCard
+                title={"FAILED PACKAGE"}
+                data={taskIotData.failed_package}
+                unit={"box"}
+              />
+              <TruckModalCard
+                title={"DELIVERY DATE"}
+                data={taskIotData.delivery_date}
+                unit={""}
+              />
             </div>
+          ) : taskIotType ==
+            SUPABASE_TABLE.IOT_DEVICE_TYPE.WAREHOUSE_MONITOR ? (
             <div>
-              <span style={{ fontWeight: "bold", fontSize: "15px" }}>
-                STATUS:{" "}
-              </span>{" "}
-              {taskStatus}
+              <TruckModalCard
+                title={"TEMPERATURE"}
+                data={taskIotData.temperature}
+                unit={"C"}
+              />
+              <TruckModalCard
+                title={"HUMIDITY"}
+                data={taskIotData.humidity}
+                unit={"litres"}
+              />
+              <TruckModalCard
+                title={"INVENTORY COUNT"}
+                data={taskIotData.inventory_count}
+                unit={"C"}
+              />
+              <TruckModalCard
+                title={"TIME STAMP"}
+                data={taskIotData.time_stamp}
+                unit={""}
+              />
             </div>
+          ) : taskIotType == SUPABASE_TABLE.IOT_DEVICE_TYPE.SALE_MONITOR ? (
             <div>
-              <span style={{ fontWeight: "bold", fontSize: "20px" }}>
-                DATA:{" "}
-              </span>{" "}
+              <TruckModalCard
+                title={"ITEM"}
+                data={taskIotData.item}
+                unit={""}
+              />
+              <TruckModalCard
+                title={"PRICE"}
+                data={taskIotData.price}
+                unit={"dollars"}
+              />
+              <TruckModalCard
+                title={"COUNT"}
+                data={taskIotData.count}
+                unit={"C"}
+              />
+              <TruckModalCard
+                title={"DISCOUNT"}
+                data={taskIotData.discount}
+                unit={"C"}
+              />
+              <TruckModalCard
+                title={"TIME STAMP"}
+                data={taskIotData.time_stamp}
+                unit={""}
+              />
             </div>
+          ) : taskIotType == SUPABASE_TABLE.IOT_DEVICE_TYPE.PRODUCE_MONITOR ? (
             <div>
-              <span style={{ fontWeight: "bold", fontSize: "15px" }}>
-                IOT DEVICE ID:{" "}
-              </span>{" "}
-              {taskIotId}
+              <TruckModalCard
+                title={"PRODUCT"}
+                data={taskIotData.product}
+                unit={""}
+              />
+              <TruckModalCard
+                title={"PRODUCT ID"}
+                data={taskIotData.product_id}
+                unit={"C"}
+              />
+              <TruckModalCard
+                title={"COUNT"}
+                data={taskIotData.count}
+                unit={"C"}
+              />
+              <TruckModalCard
+                title={"PRODUCTION RATE"}
+                data={taskIotData.poduction_rate}
+                unit={"C"}
+              />
+              <TruckModalCard
+                title={"TIME STAMP"}
+                data={taskIotData.time_stamp}
+                unit={""}
+              />
             </div>
+          ) : taskIotType == SUPABASE_TABLE.IOT_DEVICE_TYPE.SHIP_MONITOR ? (
             <div>
-              <span style={{ fontWeight: "bold", fontSize: "15px" }}>
-                DATA:{" "}
-              </span>{" "}
-              {taskIotType == SUPABASE_TABLE.IOT_DEVICE_TYPE.MILK_MONITOR ? (
-                <div>
-                  <TruckModalCard
-                    title={"MILK YIELD TOTAL"}
-                    data={taskIotData.milk_yield_total}
-                    unit={"litres"}
-                  />
-                  <TruckModalCard
-                    title={"MILK CONDUCTIVITY"}
-                    data={taskIotData.milk_conductivity}
-                    unit={"litres"}
-                  />
-                  <TruckModalCard
-                    title={"MILK TEMPERATURE"}
-                    data={taskIotData.milk_temperature}
-                    unit={"C"}
-                  />
-                  <TruckModalCard
-                    title={"FAT CONTENT"}
-                    data={taskIotData.fat_content}
-                    unit={"C"}
-                  />
-                  <TruckModalCard
-                    title={"PROTEIN CONTENT"}
-                    data={taskIotData.protein_content}
-                    unit={"C"}
-                  />
-                  <TruckModalCard
-                    title={"PRODUCT DATE"}
-                    data={taskIotData.product_date}
-                    unit={""}
-                  />
-                </div>
-              ) : taskIotType ==
-                SUPABASE_TABLE.IOT_DEVICE_TYPE.PACKAGE_MONITOR ? (
-                <div>
-                  <TruckModalCard
-                    title={"PACKAGE COUNT TOTAL"}
-                    data={taskIotData.package_count_total}
-                    unit={"box"}
-                  />
-                  <TruckModalCard
-                    title={"FAILED PACKAGE"}
-                    data={taskIotData.failed_package}
-                    unit={"box"}
-                  />
-                  <TruckModalCard
-                    title={"DELIVERY DATE"}
-                    data={taskIotData.delivery_date}
-                    unit={""}
-                  />
-                </div>
-              ) : taskIotType ==
-                SUPABASE_TABLE.IOT_DEVICE_TYPE.WAREHOUSE_MONITOR ? (
-                <div>
-                  <TruckModalCard
-                    title={"TEMPERATURE"}
-                    data={taskIotData.temperature}
-                    unit={"C"}
-                  />
-                  <TruckModalCard
-                    title={"HUMIDITY"}
-                    data={taskIotData.humidity}
-                    unit={"litres"}
-                  />
-                  <TruckModalCard
-                    title={"INVENTORY COUNT"}
-                    data={taskIotData.inventory_count}
-                    unit={"C"}
-                  />
-                  <TruckModalCard
-                    title={"TIME STAMP"}
-                    data={taskIotData.time_stamp}
-                    unit={""}
-                  />
-                </div>
-              ) : taskIotType == SUPABASE_TABLE.IOT_DEVICE_TYPE.SALE_MONITOR ? (
-                <div>
-                  <TruckModalCard
-                    title={"ITEM"}
-                    data={taskIotData.item}
-                    unit={""}
-                  />
-                  <TruckModalCard
-                    title={"PRICE"}
-                    data={taskIotData.price}
-                    unit={"dollars"}
-                  />
-                  <TruckModalCard
-                    title={"COUNT"}
-                    data={taskIotData.count}
-                    unit={"C"}
-                  />
-                  <TruckModalCard
-                    title={"DISCOUNT"}
-                    data={taskIotData.discount}
-                    unit={"C"}
-                  />
-                  <TruckModalCard
-                    title={"TIME STAMP"}
-                    data={taskIotData.time_stamp}
-                    unit={""}
-                  />
-                </div>
-              ) : taskIotType ==
-                SUPABASE_TABLE.IOT_DEVICE_TYPE.PRODUCE_MONITOR ? (
-                <div>
-                  <TruckModalCard
-                    title={"PRODUCT"}
-                    data={taskIotData.product}
-                    unit={""}
-                  />
-                  <TruckModalCard
-                    title={"PRODUCT ID"}
-                    data={taskIotData.product_id}
-                    unit={"C"}
-                  />
-                  <TruckModalCard
-                    title={"COUNT"}
-                    data={taskIotData.count}
-                    unit={"C"}
-                  />
-                  <TruckModalCard
-                    title={"PRODUCTION RATE"}
-                    data={taskIotData.poduction_rate}
-                    unit={"C"}
-                  />
-                  <TruckModalCard
-                    title={"TIME STAMP"}
-                    data={taskIotData.time_stamp}
-                    unit={""}
-                  />
-                </div>
-              ) : taskIotType == SUPABASE_TABLE.IOT_DEVICE_TYPE.SHIP_MONITOR ? (
-                <div>
-                  <TruckModalCard
-                    title={"TRANSPORT ID"}
-                    data={taskIotData.transport_id}
-                    unit={""}
-                  />
-                  <TruckModalCard
-                    title={"START DATE"}
-                    data={taskIotData.start_date}
-                    unit={""}
-                  />
-                </div>
-              ) : null}
+              <TruckModalCard
+                title={"TRANSPORT ID"}
+                data={taskIotData.transport_id}
+                unit={""}
+              />
+              <TruckModalCard
+                title={"START DATE"}
+                data={taskIotData.start_date}
+                unit={""}
+              />
             </div>
-          </Modal>
-        </Col>
-      </Row>
-      <Row>
+          ) : null}
+        </div>
+      </Modal>
+      {/* </Col>
+      </Row> */}
+      {/* <Row>
         <Col span={24}>
           <Tabs
             defaultActiveKey="1"
@@ -1642,7 +1969,8 @@ function RealtimeMap() {
             }}
           ></div>
         </Col>
-      </Row>
+      </Row> */}
+      <Notification trigger={trigger} />
     </div>
   );
 }

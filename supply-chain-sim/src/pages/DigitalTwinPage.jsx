@@ -1,4 +1,14 @@
-import { Button, Upload, message, Row, Col, Space, Input } from "antd";
+import {
+  Button,
+  Upload,
+  message,
+  Row,
+  Col,
+  Space,
+  Input,
+  Tabs,
+  Skeleton,
+} from "antd";
 import React, { useEffect, useState } from "react";
 import RealtimeMap from "../components/realtimeMap";
 import { useDispatch, useSelector } from "react-redux";
@@ -12,6 +22,9 @@ import { DTDL_CONTENT_ATTRIBUTES, SUPABASE_TABLE } from "../constants";
 import _ from "lodash";
 import { selectUser } from "../features/userSlice";
 import supabase from "../config/supabaseClient";
+import SalesData from "../components/salesData";
+import IoTData from "../components/iotData";
+import BpmnTab from "../components/bpmnTab";
 
 const { Dragger } = Upload;
 
@@ -20,11 +33,15 @@ function DigitalTwinPage() {
   const thisChildTwinArray = useSelector(selectChildTwinArray);
   const currentUser = useSelector(selectUser);
   const [organizationIdRender, setOrganizationIdRender] = useState(null);
+  const [sessionUser, setSessionUser] = useState(null);
   const [organizationId, setOrganizationId] = useState(null);
   const [organizationName, setOrganizationName] = useState(null);
 
   useEffect(() => {
     console.log("Current user: ", currentUser);
+    let data = sessionStorage.getItem("currentUser");
+    console.log("Session user: ", data);
+    setSessionUser(data);
     if (currentUser == null) return;
     api_fetchUserById(currentUser.id);
   }, []);
@@ -42,57 +59,6 @@ function DigitalTwinPage() {
       console.log("Organization id: ", data[0].organizationId);
       setOrganizationIdRender(data[0].organization_id);
     }
-  };
-
-  const childProps = {
-    name: "file",
-    multiple: true,
-    action: "https://www.mocky.io/v2/5cc8019d300000980a055e76",
-    onChange(info) {
-      const { status } = info.file;
-      if (status !== "uploading") {
-        console.log(info.file, info.fileList);
-      }
-      if (status === "done") {
-        message.success(`${info.file.name} file uploaded successfully.`);
-        let reader = new FileReader();
-        reader.onload = (e) => {
-          console.log(e.target.result);
-          onImport(e.target.result);
-        };
-        reader.readAsText(info.file.originFileObj);
-      } else if (status === "error") {
-        message.error(`${info.file.name} file upload failed.`);
-      }
-    },
-    onDrop(e) {
-      console.log("Dropped files", e.dataTransfer.files);
-    },
-  };
-
-  const mainProps = {
-    name: "file",
-    action: "https://www.mocky.io/v2/5cc8019d300000980a055e76",
-    onChange(info) {
-      const { status } = info.file;
-      if (status !== "uploading") {
-        console.log(info.file, info.fileList);
-      }
-      if (status === "done") {
-        message.success(`${info.file.name} file uploaded successfully.`);
-        let reader = new FileReader();
-        reader.onload = (e) => {
-          console.log(e.target.result);
-          onImportMain(e.target.result);
-        };
-        reader.readAsText(info.file.originFileObj);
-      } else if (status === "error") {
-        message.error(`${info.file.name} file upload failed.`);
-      }
-    },
-    onDrop(e) {
-      console.log("Dropped files", e.dataTransfer.files);
-    },
   };
 
   const onImport = (e) => {
@@ -175,102 +141,58 @@ function DigitalTwinPage() {
       .eq("id", currentUser.id);
   }
 
+  const onChange = (key) => {
+    console.log(key);
+  };
+  const items = [
+    {
+      key: "1",
+      label: "Real time",
+      children: <RealtimeMap />,
+    },
+    {
+      key: "2",
+      label: "Business process models",
+      children: <BpmnTab />,
+    },
+    {
+      key: "3",
+      label: "IoT Data History",
+      children: <IoTData />,
+    },
+    {
+      key: "4",
+      label: "Sales History",
+      children: <SalesData />,
+    },
+  ];
+
   return (
     <div>
-      {organizationIdRender == null ? (
-        <div>
-          <Space direction="vertical">
-            <div>Not part of any organization</div>
-            <div>Join a organization</div>
-            <Input
-              placeholder="Input Id"
-              onChange={(e) => {
-                setOrganizationId(e.target.value);
-              }}
-            />
-            <Button
-              onClick={() => {
-                UPDATEUserOrganization(organizationId);
-              }}
-            >
-              Join
-            </Button>
-            <div>Create an orgnazation</div>
-            <Input
-              placeholder="Name"
-              addonBefore="NAME"
-              onChange={(e) => {
-                console.log(e.target.value);
-                setOrganizationName(e.target.value);
-              }}
-            />
-            <Dragger {...childProps}>
-              <p className="ant-upload-drag-icon">
-                <InboxOutlined />
-              </p>
-              <p className="ant-upload-text">
-                Click or drag file to this area to upload
-              </p>
-              <p className="ant-upload-hint">
-                Support for a single or bulk upload. Strictly prohibited from
-                uploading company data or other banned files.
-              </p>
-            </Dragger>
-            {/* <Row>
-              <Col span={12}>
-                <Dragger {...childProps}>
-                  <p className="ant-upload-drag-icon">
-                    <InboxOutlined />
-                  </p>
-                  <p className="ant-upload-text">
-                    Click or drag file to this area to upload
-                  </p>
-                  <p className="ant-upload-hint">
-                    Support for a single or bulk upload. Strictly prohibited
-                    from uploading company data or other banned files.
-                  </p>
-                </Dragger>
-              </Col>
-              <Col span={12}>
-                <Dragger {...mainProps}>
-                  <p className="ant-upload-drag-icon">
-                    <InboxOutlined />
-                  </p>
-                  <p className="ant-upload-text">
-                    Click or drag file to this area to upload
-                  </p>
-                  <p className="ant-upload-hint">
-                    Support for a single or bulk upload. Strictly prohibited
-                    from uploading company data or other banned files.
-                  </p>
-                </Dragger>
-              </Col>
-            </Row> */}
-            <Button
-              onClick={() => {
-                console.log("Yes");
-                INSERTOrganization(organizationName);
-              }}
-            >
-              Create
-            </Button>
-          </Space>
-        </div>
+      {sessionUser == null ? (
+        <Skeleton />
       ) : (
+        // <div>
+        //   <Space direction="vertical">
+        //     <div>Not part of any organization</div>
+        //     <div>Join a organization</div>
+        //     <Input
+        //       placeholder="Input Id"
+        //       onChange={(e) => {
+        //         setOrganizationId(e.target.value);
+        //       }}
+        //     />
+        //     <Button
+        //       onClick={() => {
+        //         UPDATEUserOrganization(organizationId);
+        //       }}
+        //     >
+        //       Join
+        //     </Button>
+        //   </Space>
+        // </div>
         <div>
-          {/* <Dragger {...childProps}>
-            <p className="ant-upload-drag-icon">
-              <InboxOutlined />
-            </p>
-            <p className="ant-upload-text">
-              Click or drag file to this area to upload
-            </p>
-            <p className="ant-upload-hint">
-              Support for a single or bulk upload. Strictly prohibited from
-              uploading company data or other banned files.
-            </p>
-          </Dragger> */}
-          <RealtimeMap />
+          <Tabs defaultActiveKey="1" items={items} onChange={onChange} />
         </div>
       )}
     </div>
