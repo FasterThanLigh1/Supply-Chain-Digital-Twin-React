@@ -19,7 +19,7 @@ function App() {
 
   return (
     <div>
-      {sessionUser !== null ? <Navigation /> : null}
+      {currentUser !== null ? <Navigation /> : null}
       <AnimatedRoutes />
     </div>
   );
