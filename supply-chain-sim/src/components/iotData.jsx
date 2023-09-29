@@ -36,6 +36,9 @@ const salesColumns = [
     title: "Date",
     dataIndex: "updated_date",
     key: "updated_date",
+    render: (e) => {
+      return <div>{e}</div>;
+    },
   },
   {
     title: "IoT device ID",
