@@ -272,9 +272,17 @@ async function api_updateLiveTelemetry(data) {
       message = "BAKERY 1: MACHINE 1: oven temperature low";
     }
   }
+  if (data.id == "truck_1") {
+    if (data.data.temperature > 100) {
+      console.log("st wrong");
+      status = "ERROR";
+      message = "TRUCK 1: temperature hight";
+    }
+  }
   const { error } = await supabase
     .from("iot_devices")
     .update({
+      last_updated: data.data.date_time,
       data: data,
       status: status,
       error_message: message,

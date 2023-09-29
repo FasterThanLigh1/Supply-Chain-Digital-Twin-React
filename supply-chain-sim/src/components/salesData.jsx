@@ -12,6 +12,9 @@ const salesColumns = [
     title: "Date",
     dataIndex: "created_at",
     key: "created_at",
+    render: (e) => {
+      return <div>{Date(e)}</div>;
+    },
   },
   {
     title: "ParticipantId",
