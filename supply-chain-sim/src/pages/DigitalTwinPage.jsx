@@ -8,6 +8,8 @@ import {
   Input,
   Tabs,
   Skeleton,
+  Drawer,
+  FloatButton,
 } from "antd";
 import React, { useEffect, useState } from "react";
 import RealtimeMap from "../components/realtimeMap";
@@ -36,6 +38,9 @@ function DigitalTwinPage() {
   const [sessionUser, setSessionUser] = useState(null);
   const [organizationId, setOrganizationId] = useState(null);
   const [organizationName, setOrganizationName] = useState(null);
+  const [openDrawer, setOpenDrawer] = useState(false);
+  const [organizationState, setOrganizationState] =
+    useState("Prepare Material");
 
   useEffect(() => {
     console.log("Current user: ", currentUser);
@@ -72,13 +77,6 @@ function DigitalTwinPage() {
         data: data,
       })
     );
-    console.log(myObject);
-  };
-
-  const onImportMain = (e) => {
-    console.log(e);
-    var myObject = JSON.parse(e);
-    dispatch(setMainTwin(myObject));
     console.log(myObject);
   };
 
@@ -150,18 +148,28 @@ function DigitalTwinPage() {
       label: "Real time",
       children: <RealtimeMap />,
     },
+    // {
+    //   key: "2",
+    //   label: "Business process models",
+    //   // children: <BpmnTab state={organizationState} />,
+    //   children: (
+    //     <button
+    //       onClick={() => {
+    //         setOpenDrawer(true);
+    //         setOrganizationState("Something");
+    //       }}
+    //     >
+    //       Test
+    //     </button>
+    //   ),
+    // },
     {
       key: "2",
-      label: "Business process models",
-      children: <BpmnTab />,
-    },
-    {
-      key: "3",
       label: "IoT Data History",
       children: <IoTData />,
     },
     {
-      key: "4",
+      key: "3",
       label: "Sales History",
       children: <SalesData />,
     },
@@ -193,6 +201,19 @@ function DigitalTwinPage() {
         // </div>
         <div>
           <Tabs defaultActiveKey="1" items={items} onChange={onChange} />
+          <FloatButton type="primary" onClick={() => setOpenDrawer(true)} />
+          <Drawer
+            title="Basic Drawer"
+            placement="bottom"
+            closable={false}
+            onClose={() => {
+              setOpenDrawer(false);
+            }}
+            open={openDrawer}
+            key="bottom"
+          >
+            <BpmnTab state={organizationState} />
+          </Drawer>
         </div>
       )}
     </div>

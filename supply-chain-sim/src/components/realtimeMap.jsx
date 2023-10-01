@@ -43,6 +43,7 @@ import axios from "axios";
 import BootstrapModal from "react-bootstrap/Modal";
 import TruckModalCard from "./truckModalCard";
 import ReactBpmn from "react-bpmn";
+import { selectState, setState } from "../features/stateSlice";
 
 mapboxgl.accessToken = mapaboxAcessToken;
 const { Title } = Typography;
@@ -118,6 +119,7 @@ const columns1 = [
 function RealtimeMap() {
   const thisChildTwinArray = useSelector(selectChildTwinArray);
   const thisTruckDataArray = useSelector(selectTruckDataArray);
+  const organizationState = useSelector(selectState);
 
   //MAP ATTRIBUTE
   const mapContainer = useRef(null);
@@ -211,84 +213,8 @@ function RealtimeMap() {
   }, []);
 
   useEffect(() => {
-    console.log(diagram);
-    if (diagram.length === 0) {
-      axios
-        .get(
-          "https://cdn.staticaly.com/gh/bpmn-io/bpmn-js-examples/master/colors/resources/pizza-collaboration.bpmn"
-        )
-        .then((r) => {
-          diagramSet(r.data);
-        })
-        .catch((e) => {
-          console.log(e);
-        });
-    }
-
-    if (diagram.length > 0) {
-      if (currentModeler == null) {
-        const modeler = new Modeler({
-          container,
-          additionalModules: [KeyboardMoveModule, MoveCanvasModule],
-          keyboard: {
-            bindTo: document,
-          },
-        });
-        modelerSet(modeler);
-        /* setBusiness(modeler);
-        console.log(business); */
-        modeler.importXML(diagram, (err) => {
-          if (err) {
-          } else {
-            var elementRegistry = modeler.get("elementRegistry");
-            var canvas = modeler.get("canvas");
-            setCanvas(canvas);
-            UI_DATA.SELECT_CANVAS = canvas;
-            let eventBus = modeler.get("eventBus");
-            let events = [
-              "element.hover",
-              "element.out",
-              "element.click",
-              "element.dblclick",
-              "element.mousedown",
-              "element.mouseup",
-            ];
-
-            events.forEach(function (event) {
-              eventBus.on(event, function (e) {
-                if (event === "element.click") {
-                  if (e.element.type == "bpmn:Task") {
-                    console.log(event, "on", e.element.id);
-                    showTaskModal(e.element.id);
-                  }
-                }
-              });
-            });
-          }
-        });
-      } else {
-        currentModeler.importXML(diagram, (err) => {
-          if (err) {
-          } else {
-            console.log("[modeler", currentModeler);
-            var elementRegistry = currentModeler.get("elementRegistry");
-            console.log(elementRegistry);
-            const tempTask = [];
-            elementRegistry.forEach(function (elem, gfx) {
-              console.log(elem.type);
-              if (elem.type === BPMN_TYPE.TASK) {
-                // do something with the task
-                console.log("Start", elem);
-                tempTask.push(elem);
-              }
-            });
-            console.log("SET TASK: ", tempTask);
-            UI_DATA.SELECT_BPMN_TASK = tempTask;
-          }
-        });
-      }
-    }
-  }, [diagram]);
+    console.log("DISPATCH STATE: ", organizationState);
+  }, [organizationState]);
 
   //On select cargo
   const showCargoModal = (id) => {
@@ -418,6 +344,11 @@ function RealtimeMap() {
           // if (payload.new.data.id == "sales_record") {
           //   api_fetchSales(participantId);
           // }
+        }
+        //ORGANIZATION STATE CHANGE
+        else if (payload.table == SUPABASE_TABLE.ORGANIZATION_LIST) {
+          console.log(payload.new.state);
+          dispatch(setState(payload.new.state));
         }
         //PROCESS CHANGES
         else if (payload.table == SUPABASE_TABLE.LIVE_PROCESS) {

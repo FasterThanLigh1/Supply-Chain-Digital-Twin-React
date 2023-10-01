@@ -4,6 +4,7 @@ const initialState = {
   isRunningSimulation: false,
   currentTaskId: null,
   graphChanged: 0,
+  state: "prepare material",
 };
 
 export const stateSlice = createSlice({
@@ -11,7 +12,7 @@ export const stateSlice = createSlice({
   initialState,
   reducers: {
     setState: (state, action) => {
-      state.isRunningSimulation = action.payload;
+      state.state = action.payload;
     },
     setTaskId: (state, action) => {
       state.currentTaskId = action.payload;
@@ -24,7 +25,7 @@ export const stateSlice = createSlice({
 
 // Action creators are generated for each case reducer function
 export const { setState, setGraphChanged, setTaskId } = stateSlice.actions;
-export const selectState = (state) => state.state.isRunningSimulation;
+export const selectState = (state) => state.state.state;
 export const selectTaskId = (state) => state.state.currentTaskId;
 export const selectGraphChanged = (state) => state.state.graphChanged;
 
