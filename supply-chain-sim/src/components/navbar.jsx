@@ -1,24 +1,9 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import supplyChainIcon from "../../public/Image/supply-chain.png";
-import { Menu, Space, Dropdown, Button } from "antd";
-import {
-  BuildOutlined,
-  HomeOutlined,
-  NodeIndexOutlined,
-  DashboardOutlined,
-  ClusterOutlined,
-  UserOutlined,
-  SettingOutlined,
-  LogoutOutlined,
-} from "@ant-design/icons";
-import {
-  simulationRoute,
-  bpmnRoute,
-  landingRoute,
-  analysisRoute,
-  digitalTwinRoute,
-} from "../constants/route";
+import { Menu } from "antd";
+import { LogoutOutlined } from "@ant-design/icons";
+import { landingRoute } from "../constants/route";
 import supabase from "../config/supabaseClient";
 import { useDispatch } from "react-redux";
 import { setCurrentUser } from "../features/userSlice";
@@ -51,11 +36,6 @@ const Navigation = () => {
   }
 
   const items = [
-    // {
-    //   label: <Link to={digitalTwinRoute}>Digital Twin</Link>,
-    //   key: "twin",
-    //   icon: <ClusterOutlined style={{ fontSize: iconProps.size }} />,
-    // },
     {
       label: <a onClick={() => signOutUser()}>Sign Out</a>,
       key: "logout",

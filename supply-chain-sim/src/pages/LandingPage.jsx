@@ -1,12 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Link, Route, Routes } from "react-router-dom";
 import { Button, Row, Col, Checkbox, Form, Input } from "antd";
-import { digitalTwinRoute, simulationRoute } from "../constants/route";
-import { color, motion } from "framer-motion";
+import { digitalTwinRoute } from "../constants/route";
+import { motion } from "framer-motion";
 import backgroundImage from "../../public/Image/background2.jpg";
-import officeImage from "../../public/Image/office.jpg";
-import { Auth } from "@supabase/auth-ui-react";
-import { ThemeSupa } from "@supabase/auth-ui-shared";
 import supabase from "../config/supabaseClient";
 import { useDispatch } from "react-redux";
 import { setCurrentUser } from "../features/userSlice";

@@ -1,161 +1,3 @@
-/* const dayjs = require("dayjs");
-const express = require("express");
-const app = express();
-const bodyParser = require("body-parser");
-const cors = require("cors");
-const mysql = require("mysql2");
-
-const PORT = 8080;
-
-app.use(cors());
-app.use(express.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-
-const db = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: "Chip1018!",
-  database: "simulation_data",
-});
-
-db.connect((err) => {
-  if (err) throw err;
-  console.log("Connected!");
-});
-
-app.post("/new_simulation", (req, res) => {
-  let data = req.body;
-  console.log(data);
-  //let dataJson = JSON.parse(data.id);
-  console.log(data.id);
-  const sqlCreate = `insert into Simulation (SimulationKey,Date,EndDate) values ('${data.id}', STR_TO_DATE('${data.date}','%Y-%m-%dT%T.%fZ'), STR_TO_DATE('${data.endDate}','%Y-%m-%dT%T.%fZ'));`;
-  db.query(sqlCreate, (err, result) => {
-    if (err) throw err;
-    res.send(result);
-  });
-});
-
-app.post("/new_participants", (req, res) => {
-  let data = req.body;
-  console.log(data);
-  const simId = data.simId;
-  const participants = data.participants;
-  console.log(participants);
-  const values = participants
-    .map((p) => `('${p.id}', '${simId}','${p.name}')`)
-    .join(",");
-  const sqlCreate = `insert into Participants (ParticipantKey, SimulationKey, Name) values ${values};`;
-  db.query(sqlCreate, (err, result) => {
-    if (err) throw err;
-    res.send(result);
-  });
-  /* const curDate = dayjs();
-  const simId =
-    "simulation_" +
-    curDate.date().toString() +
-    "_" +
-    curDate.month().toString() +
-    "_" +
-    curDate.year().toString() +
-    "_" +
-    curDate.hour().toString() +
-    "" +
-    curDate.minute().toString() +
-    "" +
-    curDate.second().toString();
-  const values = participants
-    .map((p) => `('${p.id}', '${simId}','${p.name}')`)
-    .join(",");
-  const sqlCreate = `insert into Participants (ParticipantKey, SimulationKey, Name) values ${values};`;
-  db.query(sqlCreate, (err, result) => {
-    if (err) throw err;
-    res.send(result);
-  }); 
-});
-
-app.post("/insert_statistic", (req, res) => {
-  const body = req.body;
-  console.log(body);
-  /* const values = body
-    .map(
-      (p) =>
-        `('${p.participantKey}', '${p.simulationKey}','${p.data.totalInventory}', '${p.data.otalBackorder}', CURDATE())`
-    )
-    .join(","); 
-  const values = `('${body.participantKey}', '${body.simulationKey}','${body.data.totalInventory}', '${body.data.totalBackOrder}', STR_TO_DATE('${body.date}','%Y-%m-%dT%T.%fZ'))`;
-  const sqlCreate = `insert into Statistic (ParticipantKey, SimulationKey, TotalInventory, TotalBackorder, Date) values ${values};`;
-  db.query(sqlCreate, (err, result) => {
-    if (err) throw err;
-    res.send(result);
-  });
-  /* const curDate = dayjs();
-  const simId =
-    "simulation_" +
-    curDate.date().toString() +
-    "_" +
-    curDate.month().toString() +
-    "_" +
-    curDate.year().toString() +
-    "_" +
-    curDate.hour().toString() +
-    "" +
-    curDate.minute().toString() +
-    "" +
-    curDate.second().toString();
-  const values = statistic
-    .map(
-      (p) =>
-        `('${p.ParticipantKey}', '${p.SimulationKey}','${p.TotalInventory}', '${p.TotalBackorder}', CURDATE())`
-    )
-    .join(",");
-  const sqlCreate = `insert into Statistic (ParticipantKey, SimulationKey, TotalInventory, TotalBackorder, Date) values ${values};`;
-  db.query(sqlCreate, (err, result) => {
-    if (err) throw err;
-    res.send(result);
-  }); 
-});
-
-app.get("/get_simulation_list", (req, res) => {
-  const sqlGet = "select * from simulation;";
-  db.query(sqlGet, (err, result) => {
-    if (err) throw err;
-    res.send(result);
-  });
-});
-
-app.get("/get_participants/:id", (req, res) => {
-  const id = req.params.id;
-  const sqlGet = `select participants.ParticipantKey, participants.Name, participants.SimulationKey
-from participants inner join simulation on participants.SimulationKey = simulation.SimulationKey
-where simulation.SimulationKey = '${id}'`;
-  db.query(sqlGet, (err, result) => {
-    if (err) throw err;
-    res.send(result);
-  });
-});
-
-app.get("/get_statistic/:id/:participant", (req, res) => {
-  const id = req.params.id;
-  const participant = req.params.participant;
-  console.log(id);
-  const sqlGet = `select statistic.UniqueKey, statistic.ParticipantKey, statistic.TotalInventory,
-statistic.TotalBackorder, statistic.Date, statistic.SimulationKey, participants.name
-from statistic inner join simulation on
-statistic.SimulationKey = simulation.SimulationKey inner join participants
-on statistic.SimulationKey = participants.SimulationKey and
-statistic.ParticipantKey = participants.ParticipantKey where participants.SimulationKey = '${id}'
-and participants.ParticipantKey = '${participant}';`;
-  db.query(sqlGet, (err, result) => {
-    if (err) throw err;
-    res.send(result);
-  });
-
-  //res.send(`<h1>${req.params.id}</h1>`);
-});
-
-app.listen(PORT, () => {
-  console.log(`listening on port http://localhost:${PORT}`);
-}); */
 const { Client } = require("azure-iot-device");
 const Mqtt = require("azure-iot-device-mqtt").Mqtt;
 const { Message } = require("azure-iot-device");
@@ -183,24 +25,6 @@ var printError = function (err) {
 var printMessages = function (messages) {
   for (const message of messages) {
     console.log("Telemetry received: ");
-
-    // if (message.body.type == "truck") {
-    //   console.log("Truck received");
-    //   api_updateVehicleById(message.body);
-    // }
-    // if (message.body.type == "milk-monitor") {
-    //   console.log("Milk monitor resceive", message.body.data.milk_temperature);
-    //   api_updateLiveTelemetry(message.body);
-    //   if (message.body.data.milk_temperature < 20) {
-    //     console.log("Print warning");
-    //     api_insertWarning(message.body, "temperature drop");
-    //   }
-    // }
-    // if (message.body.type == "sales-monitor") {
-    //   console.log("Sales monitor resceive");
-    //   api_updateLiveTelemetry(message.body);
-    // }
-
     if (message.body.id == "sales_record") {
       api_insertSales(message.body);
     }
@@ -266,15 +90,52 @@ async function api_updateLiveTelemetry(data) {
   console.log("Updated data: ", data);
   let status = "OK";
   let message = null;
+  let error_state = null;
   if (data.id == "machine_1") {
-    if (data.data.oven_t < 350) {
+    if (check(data.data.oven_t, 0, 1000)) {
       status = "ERROR";
-      message = "BAKERY 1: MACHINE 1: oven temperature low";
+      message = `BAKERY 1: MACHINE 1: oven temperature out of bound: ${data.data.oven_t}`;
+      error_state = data.state;
+    }
+    if (check(data.data.proofing_t, 0, 1000)) {
+      status = "ERROR";
+      message = `BAKERY 1: MACHINE 1: proofing temperature out of bound: ${data.data.proofing_t}`;
+      error_state = data.state;
+    }
+    if (check(data.data.ambient_t, 0, 1000)) {
+      status = "ERROR";
+      message = `BAKERY 1: MACHINE 1: ambient temperature out of bound: ${data.data.ambient_t}`;
+      error_state = data.state;
+    }
+    if (check(data.data.motor_speed, 0, 3000)) {
+      status = "ERROR";
+      message = `BAKERY 1: MACHINE 1: motor speed out of bound: ${data.data.motor_speed}`;
+      error_state = data.state;
+    }
+    if (check(data.data.power_consumption, 300, 1000)) {
+      console.log("ERROR: power consumption out of bound");
+      status = "ERROR";
+      message = `BAKERY 1: MACHINE 1: power consumption out of bound: ${data.data.power_consumption}`;
+      error_state = data.state;
+    }
+    if (check(data.data.proof_time, 0, 1000)) {
+      status = "ERROR";
+      message = `BAKERY 1: MACHINE 1: proofing time out of bound: ${data.data.proof_time}`;
+      error_state = data.state;
+    }
+    if (check(data.data.baking_time, 0, 1000)) {
+      status = "ERROR";
+      message = `BAKERY 1: MACHINE 1: bakimg time out of bound: ${data.data.baking_time}`;
+      error_state = data.state;
+    }
+    if (check(data.data.baking_temperature, 0, 1000)) {
+      status = "ERROR";
+      message = `BAKERY 1: MACHINE 1: baking temperature out of bound: ${data.data.baking_temperature}`;
+      error_state = data.state;
     }
   }
   if (data.id == "truck_1") {
     if (data.data.temperature > 100) {
-      console.log("st wrong");
       status = "ERROR";
       message = "TRUCK 1: temperature hight";
     }
@@ -286,6 +147,7 @@ async function api_updateLiveTelemetry(data) {
       data: data,
       status: status,
       error_message: message,
+      error_state: error_state,
     })
     .eq("id", data.id);
   if (error) {
@@ -323,6 +185,10 @@ async function api_updateVehicleById(data) {
     console.log(error);
   }
 }
+
+const check = (val, min, max) => {
+  return val < min || val > max;
+};
 
 // Open a connection to the IoT Hub
 client.open((err) => {
