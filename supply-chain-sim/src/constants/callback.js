@@ -2,18 +2,24 @@ import * as turf from "@turf/turf";
 import { notification } from "antd";
 import mapboxgl from "mapbox-gl"; // eslint-disable-line import/no-webpack-loader-syntax
 import _ from "lodash";
-
+let count = 0;
 export const openNotificationWithIcon = (
   message,
   description,
   type,
   duration = 3
 ) => {
-  notification[type]({
-    message: message,
-    description: description,
-    duration: duration,
-  });
+  if (count > 3) {
+    notification.close(Object.keys(notification.notices)[0]);
+    count -= 1;
+  } else {
+    count += 1;
+    notification[type]({
+      message: message,
+      description: description,
+      duration: duration,
+    });
+  }
 };
 
 export async function getRoute(start, end, routeId, map) {

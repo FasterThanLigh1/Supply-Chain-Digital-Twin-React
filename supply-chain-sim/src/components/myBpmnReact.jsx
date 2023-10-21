@@ -5,6 +5,9 @@ import KeyboardMoveModule from "diagram-js/lib/navigation/keyboard-move";
 import MoveCanvasModule from "diagram-js/lib/navigation/movecanvas";
 
 export default class MyReactBpmn extends React.Component {
+  diagram = {
+    xml: null,
+  };
   constructor(props) {
     super(props);
 
@@ -14,7 +17,8 @@ export default class MyReactBpmn extends React.Component {
   }
 
   componentDidMount() {
-    const { url, diagramXML } = this.props;
+    const { url, diagramXML, state } = this.props;
+    console.log("Did mount");
 
     const container = this.containerRef.current;
 
@@ -25,13 +29,19 @@ export default class MyReactBpmn extends React.Component {
 
     this.bpmnViewer.on("import.done", (event) => {
       const { error, warnings } = event;
-      var elementRegistry = this.bpmnViewer.get("elementRegistry");
+      this.elementRegistry = this.bpmnViewer.get("elementRegistry");
       var canvas = this.bpmnViewer.get("canvas");
 
-      elementRegistry.forEach(function (elem) {
+      this.elementRegistry.forEach(function (elem) {
         if (elem.type === "bpmn:Task") {
-          canvas.addMarker(elem.id, "highlight-participant");
           console.log("Start", elem.businessObject.name);
+          console.log(state);
+          if (elem.businessObject.name != state) {
+            canvas.addMarker(elem.id, "highlight-participant");
+          } else {
+            canvas.addMarker(elem.id, "highlight-active");
+          }
+
           //canvas.addMarker(elem.id, "highlight");
         }
       });
@@ -59,7 +69,44 @@ export default class MyReactBpmn extends React.Component {
   }
 
   componentDidUpdate(prevProps, prevState) {
-    const { props, state } = this;
+    const { props } = this;
+    console.log("NEW PROPS: ", props.state);
+    console.log("OLD PROPS: ", prevProps.state);
+    // this.elementRegistry = this.bpmnViewer.get("elementRegistry");
+    // var canvas = this.bpmnViewer.get("canvas");
+
+    // this.elementRegistry.forEach(function (elem) {
+    //   if (elem.type === "bpmn:Task") {
+    //     console.log("Start", elem.businessObject.name);
+    //     canvas.removeMarker(elem.id);
+    //     if (elem.businessObject.name != props.state) {
+    //       canvas.addMarker(elem.id, "highlight-participant");
+    //     } else {
+    //       canvas.addMarker(elem.id, "highlight-active");
+    //     }
+
+    //     //canvas.addMarker(elem.id, "highlight");
+    //   }
+    // });
+    if (prevProps.state !== props.state) {
+      console.log("Yes i am");
+    }
+
+    // if (props.state !== prevState.state) {
+    //   console.log("Something has chanegd: ", props.state);
+    //   var canvas = this.bpmnViewer.get("canvas");
+    //   this.elementRegistry.forEach(function (elem) {
+    //     if (elem.type === "bpmn:Task") {
+    //       if (elem.businessObject.name != state) {
+    //         canvas.removeMarker(elem.id);
+    //         canvas.addMarker(elem.id, "highlight-participant");
+    //       } else {
+    //         canvas.removeMarker(elem.id);
+    //         canvas.addMarker(elem.id, "highlight-active");
+    //       }
+    //     }
+    //   });
+    // }
 
     if (props.url !== prevProps.url) {
       return this.fetchDiagram(props.url);

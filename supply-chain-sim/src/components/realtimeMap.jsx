@@ -6,7 +6,6 @@ import {
   DTDL_MARKER_TYPE,
   SUPABASE_TABLE,
   mapaboxAcessToken,
-  UI_DATA,
   MESSAGE_TYPE,
 } from "../constants";
 import {
@@ -19,6 +18,7 @@ import {
   Tag,
   Card,
   List,
+  Skeleton,
 } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 import _ from "lodash";
@@ -27,9 +27,15 @@ import { getRoute, openNotificationWithIcon } from "../constants/callback";
 import Notification from "./notification";
 import "bpmn-js/dist/assets/diagram-js.css";
 import "bpmn-js/dist/assets/bpmn-font/css/bpmn-embedded.css";
-import TruckModalCard from "./truckModalCard";
 import ReactBpmn from "react-bpmn";
 import { selectState, setState } from "../features/stateSlice";
+import AttributeCard from "./attributeCard";
+import { FaBeer, FaTemperatureHigh } from "react-icons/fa";
+import { AiOutlineEllipsis } from "react-icons/ai";
+import { BsSpeedometer2 } from "react-icons/bs";
+import { PiEngineThin, PiTimer } from "react-icons/pi";
+import { BiTime } from "react-icons/bi";
+import MyReactBpmn from "./myBpmnReact";
 
 mapboxgl.accessToken = mapaboxAcessToken;
 
@@ -155,6 +161,10 @@ function RealtimeMap() {
 
   //BPMN UI ATTRIBUTE
   const [participantsIoTDevices, setParticipantsIoTDevices] = useState([]);
+  const [bpmn, setBpmn] = useState(null);
+  const [machineState, setMachineState] = useState(null);
+  const [errorState, setErrorState] = useState(null);
+  const [notificationCount, setNotificationCount] = useState(0);
 
   useEffect(() => {
     let secTimer = setInterval(() => {
@@ -179,6 +189,8 @@ function RealtimeMap() {
       setParticipantId(id);
       api_fetchIoTData(id);
       api_fetchSales(id);
+      console.log(api_participantList.find((p) => p.id == id));
+      setBpmn(api_participantList.find((p) => p.id == id).bpmn);
     } else if (id == "dtmi:dtdl:Material1;1" || id == "dtmi:dtdl:Material2;1") {
       showStoreModal(id);
     }
@@ -189,8 +201,16 @@ function RealtimeMap() {
       e.id.startsWith("machine_")
     );
     console.log("New machine data: ", temp);
+    if (temp.length > 0) {
+      setMachineState(temp[0].data.data.state);
+    }
+
     setMachineAttributes(temp);
   }, [participantsIoTDevices]);
+
+  useEffect(() => {
+    console.log("MACHIN STATE: ", machineState);
+  }, [machineState]);
 
   const handleOk = () => {
     setIsModalOpen(false);
@@ -392,6 +412,22 @@ function RealtimeMap() {
     const { data, error } = await supabase
       .from(SUPABASE_TABLE.PARTICIPANT_LIST)
       .select();
+    if (error) {
+      setfetchError(error);
+      console.log(error);
+    } else {
+      api_setParticipantList(data);
+      setfetchError(null);
+      //fecth
+      api_fecthTransportData();
+    }
+  };
+
+  const api_fetchParticipantById = async (id) => {
+    const { data, error } = await supabase
+      .from(SUPABASE_TABLE.PARTICIPANT_LIST)
+      .select()
+      .eq("id", id);
     if (error) {
       setfetchError(error);
       console.log(error);
@@ -741,7 +777,16 @@ function RealtimeMap() {
             {participantsIoTDevices.map((e) => {
               return (
                 <Col span={8}>
-                  <Card title={e.id} bordered={false}>
+                  <Card
+                    title={
+                      e.id == "machine_1" ? (
+                        <div>Commercial baking machine</div>
+                      ) : (
+                        <div>Cash register</div>
+                      )
+                    }
+                    bordered={false}
+                  >
                     <div className="font-bold">Latest data:</div>
                     <div>{JSON.stringify(e.data)}</div>
                   </Card>
@@ -753,20 +798,136 @@ function RealtimeMap() {
             COMMERCIAL BAKING MACHINE STATUS:
           </div>
           <div className="rounded border-4 mb-4 mt-4 h-64">
-            <ReactBpmn
-              url="/public/diagram1.bpmn"
-              onShown={() => {
-                console.log("show");
-              }}
-              onLoading={() => {
-                console.log("Loading");
-              }}
-              onError={() => {
-                console.log("eroro");
-              }}
-            />
+            {bpmn ? (
+              <MyReactBpmn
+                diagramXML={bpmn}
+                onShown={() => {
+                  console.log("show");
+                }}
+                onLoading={() => {
+                  console.log("Loading");
+                }}
+                onError={() => {
+                  console.log("error");
+                }}
+                style={{ height: "100%" }}
+                state={machineState}
+              />
+            ) : (
+              <Skeleton />
+            )}
           </div>
-          <List
+          <div className="font-bold mt-4">MACHINE ATTRIBUTE</div>
+          <Row gutter={16}>
+            <Col span={8}>
+              <AttributeCard
+                title="State"
+                content={
+                  machineAttributes.length > 0
+                    ? machineAttributes[0].data.data.state
+                    : null
+                }
+                icon={AiOutlineEllipsis}
+              />
+            </Col>
+            <Col span={8}>
+              <AttributeCard
+                title="Oven temperature"
+                content={
+                  machineAttributes.length > 0
+                    ? machineAttributes[0].data.data.oven_t
+                    : null
+                }
+                icon={FaTemperatureHigh}
+                unit="celsius"
+              />
+            </Col>
+            <Col span={8}>
+              <AttributeCard
+                title="Proofing temperature"
+                content={
+                  machineAttributes.length > 0
+                    ? machineAttributes[0].data.data.proofing_t
+                    : null
+                }
+                icon={FaTemperatureHigh}
+                unit="celsius"
+              />
+            </Col>
+            <Col span={8}>
+              <AttributeCard
+                title="Ambient temperature"
+                content={
+                  machineAttributes.length > 0
+                    ? machineAttributes[0].data.data.ambient_t
+                    : null
+                }
+                icon={FaTemperatureHigh}
+                unit="celsius"
+              />
+            </Col>
+            <Col span={8}>
+              <AttributeCard
+                title="Motor speed"
+                content={
+                  machineAttributes.length > 0
+                    ? machineAttributes[0].data.data.motor_speed
+                    : null
+                }
+                icon={BsSpeedometer2}
+                unit="rpm"
+              />
+            </Col>
+            <Col span={8}>
+              <AttributeCard
+                title="Power consumption"
+                content={
+                  machineAttributes.length > 0
+                    ? machineAttributes[0].data.data.power_consumption
+                    : null
+                }
+                icon={PiEngineThin}
+                unit="Watt"
+              />
+            </Col>
+            <Col span={8}>
+              <AttributeCard
+                title="Baking time"
+                content={
+                  machineAttributes.length > 0
+                    ? machineAttributes[0].data.data.baking_time
+                    : null
+                }
+                icon={PiTimer}
+                unit="minutes"
+              />
+            </Col>
+            <Col span={8}>
+              <AttributeCard
+                title="Baking temperature"
+                content={
+                  machineAttributes.length > 0
+                    ? machineAttributes[0].data.data.baking_temperature
+                    : null
+                }
+                icon={FaTemperatureHigh}
+                unit="celsius"
+              />
+            </Col>
+            <Col span={8}>
+              <AttributeCard
+                title="Proof time"
+                content={
+                  machineAttributes.length > 0
+                    ? machineAttributes[0].data.data.proof_time
+                    : null
+                }
+                icon={PiTimer}
+                unit="minutes"
+              />
+            </Col>
+          </Row>
+          {/* <List
             size="large"
             header={<div className="text-xl font-bold">Machine attribute</div>}
             bordered
@@ -843,7 +1004,7 @@ function RealtimeMap() {
                 ? machineAttributes[0].data.data.quantity_produced
                 : null}
             </List.Item>
-          </List>
+          </List> */}
           <div className="font-bold mt-4">SALES</div>
           <Table columns={salesColumns} dataSource={salesData} />
           <div className="font-bold mt-4">INVENTORY</div>
